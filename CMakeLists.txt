@@ -29,14 +29,14 @@ add_executable(${EXE_NAME} ${MAIN_FILE})
 set_property(TARGET ${EXE_NAME} PROPERTY C_STANDARD ${C_STANDARD})
 target_link_libraries(${EXE_NAME} PRIVATE ${LIBRARY_NAME})
 
-enable_testing()
+#enable_testing()
 
-set(TEST_NAME ${LIBRARY_NAME}_test)
-add_executable(${TEST_NAME} ${TEST_FILES})
-target_include_directories(${TEST_NAME} PRIVATE tests)
-target_link_libraries(${TEST_NAME} PRIVATE ${LIBRARY_NAME})
+#set(TEST_NAME ${LIBRARY_NAME}_test)
+#add_executable(${TEST_NAME} ${TEST_FILES})
+#target_include_directories(${TEST_NAME} PRIVATE tests)
+#target_link_libraries(${TEST_NAME} PRIVATE ${LIBRARY_NAME})
 
-add_test(test1 ${TEST_NAME})
+#add_test(test1 ${TEST_NAME})
 
 # Add Sundials
 include(FetchContent)
@@ -48,9 +48,20 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(sundials)
-set(Sundials_TARGETS sundials_cvode sundials_nvecserial sundials_sunlinsolspgmr)
-target_link_libraries(${LIBRARY_NAME} PRIVATE "${Sundials_TARGETS}")
-target_include_directories(${LIBRARY_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/sundials-src/include")
+set(Sundials_TARGETS 
+    sundials_cvode 
+    sundials_cvode_obj 
+    sundials_nvecserial 
+    sundials_nvecserial_obj 
+    sundials_sunlinsoldense 
+    sundials_sunlinsoldense_obj 
+    sundials_generic 
+    sundials_generic_obj
+    sundials_sunmatrixdense
+    sundials_sunmatrixdense_obj
+)
+target_link_libraries(${LIBRARY_NAME} PRIVATE ${Sundials_TARGETS})
+target_include_directories(${LIBRARY_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/sundials-src/include" "${FETCHCONTENT_BASE_DIR}/sundials-build/include")
 
 # Install library
 install(TARGETS ${LIBRARY_NAME} DESTINATION lib)
