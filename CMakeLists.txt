@@ -63,6 +63,18 @@ set(Sundials_TARGETS
 target_link_libraries(${LIBRARY_NAME} PRIVATE ${Sundials_TARGETS})
 target_include_directories(${LIBRARY_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/sundials-src/include" "${FETCHCONTENT_BASE_DIR}/sundials-build/include")
 
+# Add argparse
+FetchContent_Declare(
+  argparse
+  GIT_REPOSITORY https://github.com/cofyc/argparse.git
+  GIT_TAG        v1.1.0
+)
+
+FetchContent_MakeAvailable(argparse)
+set(Argparse_TARGETS argparse)
+target_link_libraries(${LIBRARY_NAME} PRIVATE ${Argparse_TARGETS})
+target_include_directories(${LIBRARY_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/argparse-src")
+
 # Install library
 install(TARGETS ${LIBRARY_NAME} DESTINATION lib)
 
