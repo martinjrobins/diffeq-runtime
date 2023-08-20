@@ -1,4 +1,5 @@
 #include "lib.h"
+#include <math.h>
 
 
 /*
@@ -7,127 +8,65 @@
  *-------------------------------
  */
 
-int main()
-{
-  SUNContext sunctx;
-  realtype t, tout;
-  N_Vector y;
-  N_Vector abstol;
-  SUNMatrix A;
-  SUNLinearSolver LS;
-  void *cvode_mem;
-  int retval, iout;
-  int retvalr;
-  int rootsfound[2];
-  FILE* FID;
-
-  y = NULL;
-  abstol = NULL;
-  A = NULL;
-  LS = NULL;
-  cvode_mem = NULL;
-
-  /* Create the SUNDIALS context */
-  retval = SUNContext_Create(NULL, &sunctx);
-  if (check_retval(&retval, "SUNContext_Create", 1)) return(1);
-
-  /* Initial conditions */
-  y = N_VNew_Serial(NEQ, sunctx);
-  if (check_retval((void *)y, "N_VNew_Serial", 0)) return(1);
-
-  /* Initialize y */
-  Ith(y,1) = Y1;
-  Ith(y,2) = Y2;
-  Ith(y,3) = Y3;
-
-  /* Set the vector absolute tolerance */
-  abstol = N_VNew_Serial(NEQ, sunctx);
-  if (check_retval((void *)abstol, "N_VNew_Serial", 0)) return(1);
-
-  Ith(abstol,1) = ATOL1;
-  Ith(abstol,2) = ATOL2;
-  Ith(abstol,3) = ATOL3;
-
-  /* Call CVodeCreate to create the solver memory and specify the
-   * Backward Differentiation Formula */
-  cvode_mem = CVodeCreate(CV_BDF, sunctx);
-  if (check_retval((void *)cvode_mem, "CVodeCreate", 0)) return(1);
-
-  /* Call CVodeInit to initialize the integrator memory and specify the
-   * user's right hand side function in y'=f(t,y), the initial time T0, and
-   * the initial dependent variable vector y. */
-  retval = CVodeInit(cvode_mem, f, T0, y);
-  if (check_retval(&retval, "CVodeInit", 1)) return(1);
-
-  /* Call CVodeSVtolerances to specify the scalar relative tolerance
-   * and vector absolute tolerances */
-  retval = CVodeSVtolerances(cvode_mem, RTOL, abstol);
-  if (check_retval(&retval, "CVodeSVtolerances", 1)) return(1);
-
-  /* Call CVodeRootInit to specify the root function g with 2 components */
-  retval = CVodeRootInit(cvode_mem, 2, g);
-  if (check_retval(&retval, "CVodeRootInit", 1)) return(1);
-
-  /* Create dense SUNMatrix for use in linear solves */
-  A = SUNDenseMatrix(NEQ, NEQ, sunctx);
-  if (check_retval((void *)A, "SUNDenseMatrix", 0)) return(1);
-
-  /* Create dense SUNLinearSolver object for use by CVode */
-  LS = SUNLinSol_Dense(y, A, sunctx);
-  if (check_retval((void *)LS, "SUNLinSol_Dense", 0)) return(1);
-
-  /* Attach the matrix and linear solver */
-  retval = CVodeSetLinearSolver(cvode_mem, LS, A);
-  if (check_retval(&retval, "CVodeSetLinearSolver", 1)) return(1);
-
-  /* Set the user-supplied Jacobian routine Jac */
-  retval = CVodeSetJacFn(cvode_mem, Jac);
-  if (check_retval(&retval, "CVodeSetJacFn", 1)) return(1);
-
-  /* In loop, call CVode, print results, and test for error.
-     Break out of loop when NOUT preset output times have been reached.  */
-  printf(" \n3-species kinetics problem\n\n");
-
-  /* Open file for printing statistics */
-  FID = fopen("cvRoberts_dns_stats.csv", "w");
-
-  iout = 0;  tout = T1;
-  while(1) {
-    retval = CVode(cvode_mem, tout, y, &t, CV_NORMAL);
-    PrintOutput(t, Ith(y,1), Ith(y,2), Ith(y,3));
-
-    if (retval == CV_ROOT_RETURN) {
-      retvalr = CVodeGetRootInfo(cvode_mem, rootsfound);
-      if (check_retval(&retvalr, "CVodeGetRootInfo", 1)) return(1);
-      PrintRootInfo(rootsfound[0],rootsfound[1]);
+int main() {
+    int retval = 0;
+    Sundials* sundials = Sundials_create();
+    Options* options = Options_create();
+    retval = Sundials_init(sundials, options);
+    if (retval != 0) {
+        printf("Error in Sundials_init: %d\n", retval);
+        return(retval);
     }
 
-    if (check_retval(&retval, "CVode", 1)) break;
-    if (retval == CV_SUCCESS) {
-      iout++;
-      tout *= TMULT;
+    int number_of_inputs = get_number_of_inputs();
+    int number_of_outputs = get_number_of_outputs();
+    if (number_of_inputs != 2) {
+        printf("Error: number of inputs is %d, but should be 2\n", number_of_inputs);
+        return(1);
+    }
+    if (number_of_outputs != 1) {
+        printf("Error: number of outputs is %d, but should be 1\n", number_of_outputs);
+        return(1);
     }
 
-    retval = CVodePrintAllStats(cvode_mem, FID, SUN_OUTPUTFORMAT_CSV);
+    int number_of_times = 5;
+    Vector *times = Vector_linspace_create(0.0, 1.0, number_of_times);
+    Vector *inputs = Vector_create(number_of_inputs);
+    Vector *outputs = Vector_create(number_of_outputs * number_of_times);
 
-    if (iout == NOUT) break;
-  }
-  fclose(FID);
+    const realtype r = 1.0;
+    const realtype k = 1.0;
+    const realtype y0 = 1.0;
+    inputs->data[0] = r; // r
+    inputs->data[1] = k; // k
 
-  /* Print final statistics to the screen */
-  printf("\nFinal Statistics:\n");
-  retval = CVodePrintAllStats(cvode_mem, stdout, SUN_OUTPUTFORMAT_TABLE);
+    retval = Sundials_solve(sundials, times->data, number_of_times, inputs->data, outputs->data);
+    if (retval != 0) {
+        printf("Error in Sundials_solve: %d\n", retval);
+        return(retval);
+    }
 
-  /* check the solution error */
-  retval = check_ans(y, t, RTOL, abstol);
+    Vector *y_check = Vector_create(number_of_outputs * number_of_times);
+    for (int i = 0; i < number_of_times; i++) {
+        realtype t = times->data[i];
+        for (int j = 0; j < number_of_outputs; j++) {
+            y_check->data[i * number_of_outputs + j] = k / ((k - y0) * (-r * t) / y0 + 1.);
+        }
+    }
 
-  /* Free memory */
-  N_VDestroy(y);                            /* Free y vector */
-  N_VDestroy(abstol);                       /* Free abstol vector */
-  CVodeFree(&cvode_mem);                    /* Free CVODE memory */
-  SUNLinSolFree(LS);                        /* Free the linear solver memory */
-  SUNMatDestroy(A);                         /* Free the matrix memory */
-  SUNContext_Free(&sunctx);                 /* Free the SUNDIALS context */
+    for (int i = 0; i < number_of_outputs * number_of_times; i++) {
+        if (fabs(y_check->data[i] - outputs->data[i]) > 1e-5) {
+            printf("Error in output %d: %f != %f\n", i, y_check->data[i], outputs->data[i]);
+            retval = 1;
+        }
+    }
 
-  return(retval);
+    Sundials_destroy(sundials);
+    Options_destroy(options);
+    Vector_destroy(times);
+    Vector_destroy(inputs);
+    Vector_destroy(outputs);
+    Vector_destroy(y_check);
+
+    return(retval);
 }

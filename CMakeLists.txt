@@ -49,8 +49,8 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(sundials)
 set(Sundials_TARGETS 
-    sundials_cvode 
-    sundials_cvode_obj 
+    sundials_idas
+    sundials_idas_obj 
     sundials_nvecserial 
     sundials_nvecserial_obj 
     sundials_sunlinsoldense 
