@@ -25,9 +25,13 @@ add_library(${LIBRARY_NAME} SHARED ${SOURCE_FILES} ${HEADER_FILES})
 set_property(TARGET ${LIBRARY_NAME} PROPERTY C_STANDARD ${C_STANDARD}})
 target_include_directories(${LIBRARY_NAME} PUBLIC src)
 
+add_library(model OBJECT IMPORTED)
+set_property(TARGET model PROPERTY IMPORTED_OBJECTS ${CMAKE_SOURCE_DIR}/main.o)
+
 add_executable(${EXE_NAME} ${MAIN_FILE})
 set_property(TARGET ${EXE_NAME} PROPERTY C_STANDARD ${C_STANDARD})
-target_link_libraries(${EXE_NAME} PRIVATE ${LIBRARY_NAME})
+target_link_libraries(${EXE_NAME} PRIVATE ${LIBRARY_NAME} model)
+
 
 #enable_testing()
 
@@ -72,8 +76,8 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(argparse)
 set(Argparse_TARGETS argparse)
-target_link_libraries(${LIBRARY_NAME} PRIVATE ${Argparse_TARGETS})
-target_include_directories(${LIBRARY_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/argparse-src")
+target_link_libraries(${EXE_NAME} PRIVATE ${Argparse_TARGETS})
+target_include_directories(${EXE_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/argparse-src")
 
 # Install library
 install(TARGETS ${LIBRARY_NAME} DESTINATION lib)

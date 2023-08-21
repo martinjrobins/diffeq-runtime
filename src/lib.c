@@ -52,8 +52,13 @@ int check_retval(void *returnvalue, const char *funcname, int opt)
 }
 
 int Sundials_init(Sundials *sundials, const Options *options) {
-    int number_of_states = get_number_of_states();
-    int number_of_parameters = get_number_of_parameters();
+    int number_of_inputs = 0;
+    int number_of_outputs = 0;
+    int number_of_states = 0;
+    int data_len = 0;
+    int indices_len = 0;
+    get_dims(&number_of_inputs, &number_of_outputs, &number_of_states, &data_len, &indices_len);
+
     int retval;
 
 
@@ -154,7 +159,7 @@ int Sundials_init(Sundials *sundials, const Options *options) {
         return(1);
     }
 
-    if (number_of_parameters > 0) {
+    if (number_of_inputs > 0) {
         //IDASensInit(ida_mem, number_of_parameters, IDA_SIMULTANEOUS,
         //            sensitivities, yyS, ypS);
         //IDASensEEtolerances(ida_mem);
@@ -163,16 +168,13 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     retval = SUNLinSolInitialize(linear_solver);
     if (check_retval(&retval, "SUNLinSolInitialize", 0)) return(1);
 
-    set_id(N_VGetArrayPointer(id));
+    set_id(N_VGetArrayPointer(sundials->data->id));
     retval = IDASetId(ida_mem, id);
     if (check_retval(&retval, "IDASetId", 0)) return(1);
 
     retval = IDASetUserData(ida_mem, (void *)sundials);
     if (check_retval(&retval, "IDASetUserData", 0)) return(1);
 
-    // allocate and zero model data
-    sundials->model->data = malloc(get_data_size() * sizeof(realtype));
-    sundials->model->indices = malloc(get_indices_size() * sizeof(int));
 
     // setup sundials fields
     sundials->ida_mem = ida_mem;
@@ -187,11 +189,20 @@ int Sundials_init(Sundials *sundials, const Options *options) {
 }
 
 int Sundials_solve(Sundials *sundials, const realtype *times, const size_t number_of_times, const realtype *inputs, realtype *outputs) {
+    int number_of_inputs = 0;
+    int number_of_outputs = 0;
+    int number_of_states = 0;
+    int data_len = 0;
+    int indices_len = 0;
+    get_dims(&number_of_inputs, &number_of_outputs, &number_of_states, &data_len, &indices_len);
+
     int retval;
-    int number_of_outputs = get_number_of_outputs();
-    set_inputs(inputs);
+    set_inputs(inputs, sundials->model->data);
     set_u0(sundials->model->data, sundials->model->indices, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yp));
-    const realtype *output = get_output();
+
+    realtype *output;
+    int tensor_size;
+    get_out(sundials->model->data , &output, &tensor_size);
 
     realtype t0 = times[0];
 
@@ -260,6 +271,16 @@ Sundials *Sundials_create() {
     Sundials *sundials = malloc(sizeof(Sundials));
     sundials->data = malloc(sizeof(SundialsData));
     sundials->model = malloc(sizeof(ModelData));
+
+    int number_of_inputs = 0;
+    int number_of_outputs = 0;
+    int number_of_states = 0;
+    int data_len = 0;
+    int indices_len = 0;
+    get_dims(&number_of_inputs, &number_of_outputs, &number_of_states, &data_len, &indices_len);
+
+    sundials->model->data = malloc(data_len * sizeof(realtype));
+    sundials->model->indices = malloc(indices_len * sizeof(int));
     return sundials;
 }
 
@@ -272,6 +293,8 @@ void Sundials_destroy(Sundials *sundials) {
     N_VDestroy(sundials->data->id);
     IDAFree(&(sundials->ida_mem));
     SUNContext_Free(&sundials->sunctx);
+    free(sundials->model->indices);
+    free(sundials->model->data);
     free(sundials->data);
     free(sundials->model);
     free(sundials);

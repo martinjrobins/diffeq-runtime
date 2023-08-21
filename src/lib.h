@@ -77,18 +77,10 @@ int Sundials_solve(Sundials *sundials, const realtype *times, const size_t numbe
 void residual(const realtype t, const realtype* u, const realtype* up, realtype* data, const int* indices, realtype* rr);
 void set_u0(realtype* data, const int* indices, realtype* u, realtype* up);
 void calc_out(const realtype t, const realtype* u, const realtype* up, realtype* data, const int* indices);
-void set_id(realtype* id);
-int get_number_of_states();
-int get_number_of_parameters();
-int get_number_of_outputs();
-int get_number_of_inputs();
-int get_data_size();
-int get_indices_size();
-void set_inputs(const realtype* inputs);
-realtype *get_output();
-
-
-
+void get_dims(int* states, int* inputs, int* outputs, int* data, const int* indices);
+void set_inputs(const realtype* inputs, realtype* data);
+void set_id(int* id);
+void get_out(const realtype* data, realtype** tensor_data, int* tensor_size);
 
 /* Functions Called by the Solver */
 

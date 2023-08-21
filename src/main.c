@@ -1,6 +1,7 @@
 #include "lib.h"
 #include <math.h>
 #include <argparse.h>
+#include <string.h>
 
 static const char *const usages[] = {
     "diffeq [options] [[--] args]",
@@ -15,29 +16,35 @@ static const char *const usages[] = {
  *-------------------------------
  */
 
-int main(int argc, char *argv[]) {
+int main(int argc, const char *argv[]) {
 
     const char *path = NULL;
-    struct argparse_option options[] = {
+    struct argparse_option argparse_options[] = {
         OPT_HELP(),
         OPT_STRING('c', "config", &path, "path to configuration file", NULL, 0, 0),
         OPT_END(),
     };
 
     struct argparse argparse;
-    argparse_init(&argparse, options, usages, 0);
+    argparse_init(&argparse, argparse_options, usages, 0);
     argparse_describe(&argparse, "\nA brief description of what the program does and how it works.", "\nAdditional description of the program after the description of the arguments.");
     argc = argparse_parse(&argparse, argc, argv);
 
 
+    int number_of_inputs = 0;
+    int number_of_outputs = 0;
+    int number_of_states = 0;
+    int data_len = 0;
+    int indices_len = 0;
+    get_dims(&number_of_inputs, &number_of_outputs, &number_of_states, &data_len, &indices_len);
+
     /* read in input */
-    const int number_of_inputs = get_number_of_inputs();
     Vector *inputs = Vector_create(number_of_inputs);
-    const size_t token_buffer = 20;
-    const size_t buffer_len = number_of_inputs * 20;
-    const *token_buffer = (char *) malloc(token_buffer * sizeof(char));
+    const size_t token_buffer_len = 20;
+    size_t buffer_len = number_of_inputs * 20;
+    char *token_buffer = (char *) malloc(token_buffer_len * sizeof(char));
     char *buffer = (char *) malloc(buffer_len * sizeof(char));
-    const size_t lineSize = getline(&buffer, &buffer_len, stdin);
+    getline(&buffer, &buffer_len, stdin);
     char *start = buffer;
     int n = 0;
     while(start != NULL) {
@@ -51,7 +58,10 @@ int main(int argc, char *argv[]) {
             start = next + 1;
         }
     }
-    assert(n == number_of_inputs, "Error: number of inputs is %d, but should be %d\n", n, number_of_inputs);
+    if (n != number_of_inputs) {
+        printf("Error: number of inputs is %d, but should be %d\n", n, number_of_inputs);
+        return(1);
+    }
 
     int retval = 0;
     Sundials* sundials = Sundials_create();
@@ -62,7 +72,6 @@ int main(int argc, char *argv[]) {
         return(retval);
     }
 
-    int number_of_outputs = get_number_of_outputs();
     if (number_of_inputs != 2) {
         printf("Error: number of inputs is %d, but should be 2\n", number_of_inputs);
         return(1);
@@ -87,6 +96,7 @@ int main(int argc, char *argv[]) {
         return(retval);
     }
 
+    /* use analytical expression */
     Vector *y_check = Vector_create(number_of_outputs * number_of_times);
     for (int i = 0; i < number_of_times; i++) {
         realtype t = times->data[i];
@@ -95,10 +105,21 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    /* check that outputs are correct */
     for (int i = 0; i < number_of_outputs * number_of_times; i++) {
         if (fabs(y_check->data[i] - outputs->data[i]) > 1e-5) {
             printf("Error in output %d: %f != %f\n", i, y_check->data[i], outputs->data[i]);
             retval = 1;
+        }
+    }
+
+    /* write output to stdout in csv format */
+    for (int i = 0; i < number_of_times; i++) {
+        for (int j = 0; j < number_of_outputs; j++) {
+            printf("%f", outputs->data[i * number_of_outputs + j]);
+            if (j < number_of_outputs - 1) {
+                printf(",");
+            }
         }
     }
 
@@ -108,6 +129,8 @@ int main(int argc, char *argv[]) {
     Vector_destroy(inputs);
     Vector_destroy(outputs);
     Vector_destroy(y_check);
+    free(buffer);
+    free(token_buffer);
 
     return(retval);
 }
