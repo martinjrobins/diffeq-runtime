@@ -95,21 +95,21 @@ int Sundials_init(Sundials *sundials, const Options *options) {
 
     // set matrix
     SUNMatrix jacobian;
-    if (strcmp(options->jacobian, "sparse")) {
+    if (strcmp(options->jacobian, "sparse") == 0) {
         printf("sparse jacobian not implemented");
         return(1);
     }
-    else if (strcmp(options->jacobian, "dense") || strcmp(options->jacobian, "none")) {
+    else if (strcmp(options->jacobian, "dense") == 0 || strcmp(options->jacobian, "none") == 0) {
         jacobian = SUNDenseMatrix(number_of_states, number_of_states, sundials->sunctx);
     }
-    else if (strcmp(options->jacobian, "matrix-free")) {
+    else if (strcmp(options->jacobian, "matrix-free") == 0) {
     } else {
         printf("unknown jacobian %s", options->jacobian);
         return(1);
     };
 
     int precon_type = SUN_PREC_LEFT;
-    if (strcmp(options->preconditioner, "none")) {
+    if (strcmp(options->preconditioner, "none") == 0) {
         precon_type = SUN_PREC_NONE;
     } else {
         precon_type = SUN_PREC_LEFT;
@@ -117,23 +117,23 @@ int Sundials_init(Sundials *sundials, const Options *options) {
 
     // set linear solver
     SUNLinearSolver linear_solver;
-    if (strcmp(options->linear_solver, "SUNLinSol_Dense")) {
+    if (strcmp(options->linear_solver, "SUNLinSol_Dense") == 0) {
         linear_solver = SUNLinSol_Dense(yy, jacobian, sundials->sunctx);
     }
-    else if (strcmp(options->linear_solver, "SUNLinSol_KLU")) {
+    else if (strcmp(options->linear_solver, "SUNLinSol_KLU") == 0) {
         printf("KLU linear solver not implemented");
         return(1);
     }
-    else if (strcmp(options->linear_solver, "SUNLinSol_SPBCGS")) {
+    else if (strcmp(options->linear_solver, "SUNLinSol_SPBCGS") == 0) {
        linear_solver = SUNLinSol_SPBCGS(yy, precon_type, options->linsol_max_iterations, sundials->sunctx);
     }
-    else if (strcmp(options->linear_solver, "SUNLinSol_SPFGMR")) {
+    else if (strcmp(options->linear_solver, "SUNLinSol_SPFGMR") == 0) {
        linear_solver = SUNLinSol_SPFGMR(yy, precon_type, options->linsol_max_iterations, sundials->sunctx);
     }
-    else if (strcmp(options->linear_solver, "SUNLinSol_SPGMR")) {
+    else if (strcmp(options->linear_solver, "SUNLinSol_SPGMR") == 0) {
        linear_solver = SUNLinSol_SPGMR(yy, precon_type, options->linsol_max_iterations, sundials->sunctx);
     }
-    else if (strcmp(options->linear_solver, "SUNLinSol_SPTFQMR")) {
+    else if (strcmp(options->linear_solver, "SUNLinSol_SPTFQMR") == 0) {
        linear_solver = SUNLinSol_SPTFQMR(yy, precon_type, options->linsol_max_iterations, sundials->sunctx);
     } else {
         printf("unknown linear solver %s", options->linear_solver);
@@ -143,17 +143,17 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     retval = IDASetLinearSolver(ida_mem, linear_solver, jacobian);
     if (check_retval(&retval, "IDASetLinearSolver", 0)) return(1);
 
-    if (!strcmp(options->preconditioner, "none")) {
+    if (!strcmp(options->preconditioner, "none") == 0) {
         printf("preconditioner not implemented");
         return(1);
     }
 
-    if (strcmp(options->jacobian, "matrix-free")) {
+    if (strcmp(options->jacobian, "matrix-free") == 0) {
         //IDASetJacTimes(ida_mem, null, jtimes);
         printf("matrix-free jacobian not implemented");
         return(1);
     }
-    else if (!strcmp(options->jacobian, "none")) {
+    else if (strcmp(options->jacobian, "none") == 0) {
         //IDASetJacFn(ida_mem, jacobian_casadi);
         printf("jacobian not implemented");
         return(1);
@@ -168,7 +168,7 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     retval = SUNLinSolInitialize(linear_solver);
     if (check_retval(&retval, "SUNLinSolInitialize", 0)) return(1);
 
-    set_id(N_VGetArrayPointer(sundials->data->id));
+    set_id(N_VGetArrayPointer(id));
     retval = IDASetId(ida_mem, id);
     if (check_retval(&retval, "IDASetId", 0)) return(1);
 
@@ -221,7 +221,7 @@ int Sundials_solve(Sundials *sundials, const realtype *times, const size_t numbe
     }
 
     realtype t_final = times[number_of_times - 1];
-    for (int i = 0; i < number_of_times; i++) {
+    for (int i = 1; i < number_of_times; i++) {
         realtype t_next = times[i];
         retval = IDASetStopTime(sundials->ida_mem, t_next);
         if (check_retval(&retval, "IDASetStopTime", 0)) return(1);

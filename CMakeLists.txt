@@ -14,36 +14,41 @@ else()
 endif()
 
 set(LIBRARY_NAME ${PROJECT_NAME}_lib)
-set(EXE_NAME ${PROJECT_NAME})
+set(RUNTIME_NAME ${PROJECT_NAME}_runtime)
 set(TEST_FILES tests/tests.c)
 set(SOURCE_FILES src/lib.c)
 set(HEADER_FILES src/lib.h)
 set(MAIN_FILE src/main.c)
 set(C_STANDARD 99)
 
+# library
 add_library(${LIBRARY_NAME} SHARED ${SOURCE_FILES} ${HEADER_FILES})
 set_property(TARGET ${LIBRARY_NAME} PROPERTY C_STANDARD ${C_STANDARD}})
 target_include_directories(${LIBRARY_NAME} PUBLIC src)
 
-add_library(model OBJECT IMPORTED)
-set_property(TARGET model PROPERTY IMPORTED_OBJECTS ${CMAKE_SOURCE_DIR}/main.o)
-
-add_executable(${EXE_NAME} ${MAIN_FILE})
-set_property(TARGET ${EXE_NAME} PROPERTY C_STANDARD ${C_STANDARD})
-target_link_libraries(${EXE_NAME} PRIVATE ${LIBRARY_NAME} model)
+## runtime
+add_library(${RUNTIME_NAME} ${MAIN_FILE})
+set_property(TARGET ${RUNTIME_NAME} PROPERTY C_STANDARD ${C_STANDARD})
+target_link_libraries(${RUNTIME_NAME} PRIVATE ${LIBRARY_NAME})
 
 
-#enable_testing()
+enable_testing()
 
-#set(TEST_NAME ${LIBRARY_NAME}_test)
-#add_executable(${TEST_NAME} ${TEST_FILES})
-#target_include_directories(${TEST_NAME} PRIVATE tests)
-#target_link_libraries(${TEST_NAME} PRIVATE ${LIBRARY_NAME})
+## logistic growth test
+add_library(logistic_growth OBJECT IMPORTED)
+set_property(TARGET logistic_growth PROPERTY IMPORTED_OBJECTS ${CMAKE_SOURCE_DIR}/tests/logistic_growth.o)
+add_executable(logistic_growth_test)
+set_property(TARGET logistic_growth_test PROPERTY LINKER_LANGUAGE C)
+target_link_libraries(logistic_growth_test PRIVATE ${RUNTIME_NAME} logistic_growth)
 
-#add_test(test1 ${TEST_NAME})
+add_test(NAME logistic_growth_test1 COMMAND logistic_growth_test "-i 1,2" )
+
 
 # Add Sundials
 include(FetchContent)
+set(SUNDIALS_TEST_UNITTESTS OFF CACHE BOOL "Enable sundials unit tests")
+set(BUILD_BENCHMARKS OFF CACHE BOOL "Enable sundials benchmarks")
+set(_BUILD_EXAMPLES OFF CACHE BOOL "Enable sundials examples")
 set(FETCHCONTENT_BASE_DIR ${PROJECT_SOURCE_DIR}/third-party CACHE PATH "Directory to put third-party libs." FORCE)
 FetchContent_Declare(
   sundials 
@@ -68,6 +73,7 @@ target_link_libraries(${LIBRARY_NAME} PRIVATE ${Sundials_TARGETS})
 target_include_directories(${LIBRARY_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/sundials-src/include" "${FETCHCONTENT_BASE_DIR}/sundials-build/include")
 
 # Add argparse
+set(ENABLE_TESTS OFF CACHE BOOL "Enable argparse tests")
 FetchContent_Declare(
   argparse
   GIT_REPOSITORY https://github.com/cofyc/argparse.git
@@ -76,8 +82,8 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(argparse)
 set(Argparse_TARGETS argparse)
-target_link_libraries(${EXE_NAME} PRIVATE ${Argparse_TARGETS})
-target_include_directories(${EXE_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/argparse-src")
+target_link_libraries(${RUNTIME_NAME} PRIVATE ${Argparse_TARGETS})
+target_include_directories(${RUNTIME_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/argparse-src")
 
 # Install library
 install(TARGETS ${LIBRARY_NAME} DESTINATION lib)

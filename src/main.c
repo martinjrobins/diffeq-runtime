@@ -19,9 +19,11 @@ static const char *const usages[] = {
 int main(int argc, const char *argv[]) {
 
     const char *path = NULL;
+    char *inputs_str = NULL;
     struct argparse_option argparse_options[] = {
         OPT_HELP(),
         OPT_STRING('c', "config", &path, "path to configuration file", NULL, 0, 0),
+        OPT_STRING('i', "inputs", &inputs_str, "input vector in csv format", NULL, 0, 0),
         OPT_END(),
     };
 
@@ -39,24 +41,22 @@ int main(int argc, const char *argv[]) {
     get_dims(&number_of_inputs, &number_of_outputs, &number_of_states, &data_len, &indices_len);
 
     /* read in input */
+    char *buffer;
     Vector *inputs = Vector_create(number_of_inputs);
     const size_t token_buffer_len = 20;
-    size_t buffer_len = number_of_inputs * 20;
-    char *token_buffer = (char *) malloc(token_buffer_len * sizeof(char));
-    char *buffer = (char *) malloc(buffer_len * sizeof(char));
-    getline(&buffer, &buffer_len, stdin);
-    char *start = buffer;
+    if (inputs_str == NULL) {
+        size_t buffer_len = number_of_inputs * 20;
+        buffer = (char *) malloc(buffer_len * sizeof(char));
+        getline(&buffer, &buffer_len, stdin);
+    } else {
+        buffer = inputs_str;
+    }
+    char *token = strtok(buffer, ",");
     int n = 0;
-    while(start != NULL) {
-        char *next = strtok(start, ",");
-        memcpy(token_buffer, start, next - start);
-        inputs->data[n] = atof(token_buffer);
+    while(token != NULL) {
+        inputs->data[n] = atof(token);
         n++;
-        if (next == NULL) {
-            start = NULL;
-        } else {
-            start = next + 1;
-        }
+        token = strtok(NULL, ",");
     }
     if (n != number_of_inputs) {
         printf("Error: number of inputs is %d, but should be %d\n", n, number_of_inputs);
@@ -70,15 +70,6 @@ int main(int argc, const char *argv[]) {
     if (retval != 0) {
         printf("Error in Sundials_init: %d\n", retval);
         return(retval);
-    }
-
-    if (number_of_inputs != 2) {
-        printf("Error: number of inputs is %d, but should be 2\n", number_of_inputs);
-        return(1);
-    }
-    if (number_of_outputs != 1) {
-        printf("Error: number of outputs is %d, but should be 1\n", number_of_outputs);
-        return(1);
     }
 
     int number_of_times = 5;
@@ -100,9 +91,8 @@ int main(int argc, const char *argv[]) {
     Vector *y_check = Vector_create(number_of_outputs * number_of_times);
     for (int i = 0; i < number_of_times; i++) {
         realtype t = times->data[i];
-        for (int j = 0; j < number_of_outputs; j++) {
-            y_check->data[i * number_of_outputs + j] = k / ((k - y0) * (-r * t) / y0 + 1.);
-        }
+        y_check->data[i * number_of_outputs + 0] = k / ((k - y0) * exp(-r * t) / y0 + 1.);
+        y_check->data[i * number_of_outputs + 1] = 2 * k / ((k - y0) * exp(-r * t) / y0 + 1.);
     }
 
     /* check that outputs are correct */
@@ -119,6 +109,8 @@ int main(int argc, const char *argv[]) {
             printf("%f", outputs->data[i * number_of_outputs + j]);
             if (j < number_of_outputs - 1) {
                 printf(",");
+            } else {
+                printf("\n");
             }
         }
     }
@@ -129,8 +121,6 @@ int main(int argc, const char *argv[]) {
     Vector_destroy(inputs);
     Vector_destroy(outputs);
     Vector_destroy(y_check);
-    free(buffer);
-    free(token_buffer);
 
     return(retval);
 }
