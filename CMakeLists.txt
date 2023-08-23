@@ -14,7 +14,7 @@ else()
 endif()
 
 set(LIBRARY_NAME ${PROJECT_NAME}_lib)
-set(RUNTIME_NAME ${PROJECT_NAME}_runtime)
+set(RUNTIME_NAME ${PROJECT_NAME})
 set(TEST_FILES tests/tests.c)
 set(SOURCE_FILES src/lib.c)
 set(HEADER_FILES src/lib.h)
@@ -56,7 +56,12 @@ FetchContent_Declare(
   GIT_TAG        v6.6.0
 )
 
-FetchContent_MakeAvailable(sundials)
+FetchContent_GetProperties(sundials)
+if(NOT sundials_POPULATED)
+  FetchContent_Populate(sundials)
+  add_subdirectory(${sundials_SOURCE_DIR} ${sundials_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
 set(Sundials_TARGETS 
     sundials_idas
     sundials_idas_obj 
@@ -80,7 +85,12 @@ FetchContent_Declare(
   GIT_TAG        v1.1.0
 )
 
-FetchContent_MakeAvailable(argparse)
+FetchContent_GetProperties(argparse)
+if(NOT argparse_POPULATED)
+  FetchContent_Populate(argparse)
+  add_subdirectory(${argparse_SOURCE_DIR} ${argparse_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
 set(Argparse_TARGETS argparse)
 target_link_libraries(${RUNTIME_NAME} PRIVATE ${Argparse_TARGETS})
 target_include_directories(${RUNTIME_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/argparse-src")
