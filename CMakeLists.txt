@@ -96,10 +96,9 @@ target_link_libraries(${RUNTIME_NAME} PRIVATE ${Argparse_TARGETS})
 target_include_directories(${RUNTIME_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/argparse-src")
 
 # Install library
-install(TARGETS ${LIBRARY_NAME} DESTINATION lib)
-
-# Install executable
-install(TARGETS ${EXE_NAME} DESTINATION bin)
+set_property(TARGET ${LIBRARY_NAME} PROPERTY INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set_property(TARGET ${RUNTIME_NAME} PROPERTY INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+install(TARGETS ${LIBRARY_NAME} ${RUNTIME_NAME} DESTINATION lib)
 
 # Install library headers
 install(FILES ${HEADER_FILES} DESTINATION include)
