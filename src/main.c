@@ -1,4 +1,4 @@
-#include "lib.h"
+#include "diffeq.h"
 #include <math.h>
 #include <argparse.h>
 #include <string.h>
@@ -9,6 +9,17 @@ static const char *const usages[] = {
     NULL,
 };
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+
+Vector *read_csv_vector(char *data, int len) {
+    Vector *vec = Vector_create_with_capacity(0, MAX(len, 1));
+    char *token = strtok(data, ",");
+    while(token != NULL) {
+        Vector_push(vec, atof(token));
+        token = strtok(NULL, ",");
+    }
+    return vec;
+}
 
 /*
  *-------------------------------
@@ -20,10 +31,12 @@ int main(int argc, const char *argv[]) {
 
     const char *path = NULL;
     char *inputs_str = NULL;
+    char *times_str = NULL;
     struct argparse_option argparse_options[] = {
         OPT_HELP(),
         OPT_STRING('c', "config", &path, "path to configuration file", NULL, 0, 0),
         OPT_STRING('i', "inputs", &inputs_str, "input vector in csv format", NULL, 0, 0),
+        OPT_STRING('t', "times", &times_str, "times vector in csv format", NULL, 0, 0),
         OPT_END(),
     };
 
@@ -41,27 +54,22 @@ int main(int argc, const char *argv[]) {
     get_dims(&number_of_inputs, &number_of_outputs, &number_of_states, &data_len, &indices_len);
 
     /* read in input */
-    char *buffer;
-    Vector *inputs = Vector_create(number_of_inputs);
-    const size_t token_buffer_len = 20;
     if (inputs_str == NULL) {
-        size_t buffer_len = number_of_inputs * 20;
-        buffer = (char *) malloc(buffer_len * sizeof(char));
-        getline(&buffer, &buffer_len, stdin);
-    } else {
-        buffer = inputs_str;
-    }
-    char *token = strtok(buffer, ",");
-    int n = 0;
-    while(token != NULL) {
-        inputs->data[n] = atof(token);
-        n++;
-        token = strtok(NULL, ",");
-    }
-    if (n != number_of_inputs) {
-        printf("Error: number of inputs is %d, but should be %d\n", n, number_of_inputs);
+        printf("Error: inputs not specified\n");
         return(1);
     }
+    Vector *inputs = read_csv_vector(inputs_str, number_of_inputs);
+    if (inputs->len != number_of_inputs) {
+        printf("Error: inputs vector length (%d) does not match number of inputs (%d)\n", inputs->len, number_of_inputs);
+        return(1);
+    }
+
+    if (times_str == NULL) {
+        printf("Error: times not specified\n");
+        return(1);
+    }
+    Vector *times = read_csv_vector(times_str, -1);
+    int number_of_times = times->len;
 
     int retval = 0;
     Sundials* sundials = Sundials_create();
@@ -72,35 +80,12 @@ int main(int argc, const char *argv[]) {
         return(retval);
     }
 
-    int number_of_times = 5;
-    Vector *times = Vector_linspace_create(0.0, 1.0, number_of_times);
     Vector *outputs = Vector_create(number_of_outputs * number_of_times);
-
-    const realtype r = inputs->data[0];
-    const realtype k = inputs->data[1];
-    const realtype y0 = 1.0;
-    printf("r = %f, k = %f, y0 = %f\n", r, k, y0);
 
     retval = Sundials_solve(sundials, times->data, number_of_times, inputs->data, outputs->data);
     if (retval != 0) {
         printf("Error in Sundials_solve: %d\n", retval);
         return(retval);
-    }
-
-    /* use analytical expression */
-    Vector *y_check = Vector_create(number_of_outputs * number_of_times);
-    for (int i = 0; i < number_of_times; i++) {
-        realtype t = times->data[i];
-        y_check->data[i * number_of_outputs + 0] = k / ((k - y0) * exp(-r * t) / y0 + 1.);
-        y_check->data[i * number_of_outputs + 1] = 2 * k / ((k - y0) * exp(-r * t) / y0 + 1.);
-    }
-
-    /* check that outputs are correct */
-    for (int i = 0; i < number_of_outputs * number_of_times; i++) {
-        if (fabs(y_check->data[i] - outputs->data[i]) > 1e-5) {
-            printf("Error in output %d: %f != %f\n", i, y_check->data[i], outputs->data[i]);
-            retval = 1;
-        }
     }
 
     /* write output to stdout in csv format */
@@ -120,7 +105,6 @@ int main(int argc, const char *argv[]) {
     Vector_destroy(times);
     Vector_destroy(inputs);
     Vector_destroy(outputs);
-    Vector_destroy(y_check);
 
     return(retval);
 }

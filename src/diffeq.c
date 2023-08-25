@@ -1,4 +1,4 @@
-#include "lib.h"
+#include "diffeq.h"
 #include <string.h>
 #include <math.h>
 
@@ -143,7 +143,7 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     retval = IDASetLinearSolver(ida_mem, linear_solver, jacobian);
     if (check_retval(&retval, "IDASetLinearSolver", 0)) return(1);
 
-    if (!strcmp(options->preconditioner, "none") == 0) {
+    if (strcmp(options->preconditioner, "none") != 0) {
         printf("preconditioner not implemented");
         return(1);
     }
@@ -317,9 +317,7 @@ void Options_destroy(Options *options) {
 }
 
 Vector *Vector_linspace_create(realtype start, realtype stop, int len) {
-    Vector *vector = malloc(sizeof(Vector));
-    vector->data = (realtype *)malloc(len * sizeof(realtype));
-    vector->len = len;
+    Vector *vector = Vector_create(len);
     realtype step = (stop - start) / (len - 1);
     for (int i = 0; i < len; i++) {
         vector->data[i] = start + i * step;
@@ -332,10 +330,29 @@ void Vector_destroy(Vector *vector) {
     free(vector);
 } 
 
-Vector *Vector_create(int len) {
+Vector *Vector_create_with_capacity(int len, int capacity) {
+    if (capacity < len) {
+        capacity = len;
+    }
+    if (capacity < 1) {
+        capacity = 1;
+    }
     Vector *vector = malloc(sizeof(Vector));
-    vector->data = (realtype *)malloc(len * sizeof(realtype));
+    vector->data = (realtype *)malloc(capacity * sizeof(realtype));
     vector->len = len;
+    vector->capacity = capacity;
     return vector;
+}
+
+Vector *Vector_create(int len) {
+    return Vector_create_with_capacity(len, len);
+}
+
+void Vector_push(Vector *vector, realtype value) {
+    if (vector->len == vector->capacity) {
+        vector->capacity *= 2;
+        vector->data = realloc(vector->data, vector->capacity * sizeof(realtype));
+    }
+    vector->data[vector->len++] = value;
 }
 

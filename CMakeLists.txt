@@ -13,45 +13,52 @@ else()
     add_compile_options(-Wall -pedantic)
 endif()
 
-set(LIBRARY_NAME ${PROJECT_NAME}_lib)
-set(RUNTIME_NAME ${PROJECT_NAME})
+if (DEFINED EMSCRIPTEN)
+  set(LIBRARY_NAME ${PROJECT_NAME}_lib_wasm)
+  set(RUNTIME_NAME ${PROJECT_NAME}_wasm)
+else()
+  set(LIBRARY_NAME ${PROJECT_NAME}_lib)
+  set(RUNTIME_NAME ${PROJECT_NAME})
+endif()
+
 set(TEST_FILES tests/tests.c)
-set(SOURCE_FILES src/lib.c)
-set(HEADER_FILES src/lib.h)
+set(SOURCE_FILES src/diffeq.c)
+set(HEADER_FILES src/diffeq.h)
 set(MAIN_FILE src/main.c)
 set(C_STANDARD 99)
 
 ## library
-if (DEFINED EMSCRIPTEN)
-  add_executable(${LIBRARY_NAME} ${SOURCE_FILES} ${HEADER_FILES})
-	set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
-	set_target_properties(${LIBRARY_NAME} PROPERTIES COMPILE_FLAGS "-Os -s SIDE_MODULE=1 ")
-	set_target_properties(${LIBRARY_NAME} PROPERTIES LINK_FLAGS    "-Os -s WASM=1 -s SIDE_MODULE=1 -s STANDALONE_WASM --no-entry")
-else()
-  add_library(${LIBRARY_NAME} ${SOURCE_FILES} ${HEADER_FILES})
-endif()
+add_library(${LIBRARY_NAME} ${SOURCE_FILES} ${HEADER_FILES})
 set_property(TARGET ${LIBRARY_NAME} PROPERTY C_STANDARD ${C_STANDARD}})
 target_include_directories(${LIBRARY_NAME} PUBLIC src)
 
-if (NOT DEFINED EMSCRIPTEN)
-  ## c runtime
-  add_library(${RUNTIME_NAME} ${MAIN_FILE})
-  set_property(TARGET ${RUNTIME_NAME} PROPERTY C_STANDARD ${C_STANDARD})
-  target_link_libraries(${RUNTIME_NAME} PRIVATE ${LIBRARY_NAME})
-  
-  enable_testing()
+## c runtime
+add_library(${RUNTIME_NAME} ${MAIN_FILE})
+set_property(TARGET ${RUNTIME_NAME} PROPERTY C_STANDARD ${C_STANDARD})
+target_link_libraries(${RUNTIME_NAME} PRIVATE ${LIBRARY_NAME})
 
-  ## logistic growth test
-  add_library(logistic_growth OBJECT IMPORTED)
-  set_property(TARGET logistic_growth PROPERTY IMPORTED_OBJECTS ${CMAKE_SOURCE_DIR}/tests/logistic_growth.o)
-  add_executable(logistic_growth_test)
-  set_property(TARGET logistic_growth_test PROPERTY LINKER_LANGUAGE C)
-  target_link_libraries(logistic_growth_test PRIVATE ${RUNTIME_NAME} logistic_growth)
-
-  add_test(NAME logistic_growth_test1 COMMAND logistic_growth_test "-i 1,2" )
+if (DEFINED EMSCRIPTEN)
+	set_target_properties(${LIBRARY_NAME} PROPERTIES COMPILE_FLAGS "-Os -s SIDE_MODULE=1 -s WASM=1 -s STANDALONE_WASM ")
+	set_target_properties(${RUNTIME_NAME} PROPERTIES COMPILE_FLAGS "-Os -s SIDE_MODULE=1 -s WASM=1 ")
+	set_target_properties(${LIBRARY_NAME} PROPERTIES LINK_FLAGS    "-Os -s SIDE_MODULE=1 -s WASM=1 -s STANDALONE_WASM ")
+	set_target_properties(${RUNTIME_NAME} PROPERTIES LINK_FLAGS    "-Os -s SIDE_MODULE=1 -s WASM=1 ")
 endif()
 
+enable_testing()
 
+## logistic growth test
+if (DEFINED EMSCRIPTEN)
+  set(LOGISTIC_GROWTH_OBJ_FILE ${CMAKE_SOURCE_DIR}/tests/logistic_growth_wasm.o)
+else()
+  set(LOGISTIC_GROWTH_OBJ_FILE ${CMAKE_SOURCE_DIR}/tests/logistic_growth.o)
+endif()
+add_library(logistic_growth OBJECT IMPORTED)
+set_property(TARGET logistic_growth PROPERTY IMPORTED_OBJECTS ${LOGISTIC_GROWTH_OBJ_FILE})
+add_executable(logistic_growth_test)
+set_property(TARGET logistic_growth_test PROPERTY LINKER_LANGUAGE C)
+target_link_libraries(logistic_growth_test PRIVATE ${RUNTIME_NAME} logistic_growth)
+
+add_test(NAME logistic_growth_test COMMAND ${CMAKE_SOURCE_DIR}/tests/logistic_growth_test.sh )
 
 # Add Sundials
 include(FetchContent)
@@ -62,6 +69,7 @@ FetchContent_Declare(
   GIT_TAG        v6.6.0
 )
 
+message("cmake module path is now ${CMAKE_MODULE_PATH}")
 FetchContent_GetProperties(sundials)
 if(NOT sundials_POPULATED)
   FetchContent_Populate(sundials)
@@ -74,32 +82,30 @@ set(Sundials_TARGETS
 target_link_libraries(${LIBRARY_NAME} PRIVATE ${Sundials_TARGETS})
 target_include_directories(${LIBRARY_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/sundials-src/include" "${FETCHCONTENT_BASE_DIR}/sundials-build/include")
 
-if (NOT DEFINED EMSCRIPTEN)
-  # Add argparse
-  FetchContent_Declare(
-    argparse
-    GIT_REPOSITORY https://github.com/cofyc/argparse.git
-    GIT_TAG        v1.1.0
-  )
+# Add argparse
+FetchContent_Declare(
+  argparse
+  GIT_REPOSITORY https://github.com/cofyc/argparse.git
+  GIT_TAG        v1.1.0
+)
 
-  FetchContent_GetProperties(argparse)
-  if(NOT argparse_POPULATED)
-    FetchContent_Populate(argparse)
-    add_subdirectory(${argparse_SOURCE_DIR} ${argparse_BINARY_DIR} EXCLUDE_FROM_ALL)
-  endif()
-
-  set(Argparse_TARGETS argparse)
-  target_link_libraries(${RUNTIME_NAME} PRIVATE ${Argparse_TARGETS})
-  target_include_directories(${RUNTIME_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/argparse-src")
-  
-  
-  set_property(TARGET ${RUNTIME_NAME} PROPERTY INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-  install(TARGETS ${RUNTIME_NAME} DESTINATION lib)
+FetchContent_GetProperties(argparse)
+if(NOT argparse_POPULATED)
+  FetchContent_Populate(argparse)
+  add_subdirectory(${argparse_SOURCE_DIR} ${argparse_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
+
+set(Argparse_TARGETS argparse)
+target_link_libraries(${RUNTIME_NAME} PRIVATE ${Argparse_TARGETS})
+target_include_directories(${RUNTIME_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/argparse-src")
 
 # Install library
 set_property(TARGET ${LIBRARY_NAME} PROPERTY INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 install(TARGETS ${LIBRARY_NAME} DESTINATION lib)
+
+# Install runtime
+set_property(TARGET ${RUNTIME_NAME} PROPERTY INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+install(TARGETS ${RUNTIME_NAME} DESTINATION lib)
 
 # Install library headers
 install(FILES ${HEADER_FILES} DESTINATION include)
