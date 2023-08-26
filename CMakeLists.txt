@@ -38,10 +38,10 @@ set_property(TARGET ${RUNTIME_NAME} PROPERTY C_STANDARD ${C_STANDARD})
 target_link_libraries(${RUNTIME_NAME} PRIVATE ${LIBRARY_NAME})
 
 if (DEFINED EMSCRIPTEN)
-	set_target_properties(${LIBRARY_NAME} PROPERTIES COMPILE_FLAGS "-Os -s SIDE_MODULE=1 -s WASM=1 -s STANDALONE_WASM ")
-	set_target_properties(${RUNTIME_NAME} PROPERTIES COMPILE_FLAGS "-Os -s SIDE_MODULE=1 -s WASM=1 ")
-	set_target_properties(${LIBRARY_NAME} PROPERTIES LINK_FLAGS    "-Os -s SIDE_MODULE=1 -s WASM=1 -s STANDALONE_WASM ")
-	set_target_properties(${RUNTIME_NAME} PROPERTIES LINK_FLAGS    "-Os -s SIDE_MODULE=1 -s WASM=1 ")
+	set_target_properties(${LIBRARY_NAME} PROPERTIES COMPILE_FLAGS "-Os -s WASM=1 ")
+	set_target_properties(${RUNTIME_NAME} PROPERTIES COMPILE_FLAGS "-Os -s WASM=1 ")
+	set_target_properties(${LIBRARY_NAME} PROPERTIES LINK_FLAGS    "-Os -s WASM=1 ")
+	set_target_properties(${RUNTIME_NAME} PROPERTIES LINK_FLAGS    "-Os -s WASM=1 ")
 endif()
 
 enable_testing()
@@ -79,6 +79,7 @@ endif()
 set(Sundials_TARGETS 
     sundials_idas
 )
+
 target_link_libraries(${LIBRARY_NAME} PRIVATE ${Sundials_TARGETS})
 target_include_directories(${LIBRARY_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/sundials-src/include" "${FETCHCONTENT_BASE_DIR}/sundials-build/include")
 
@@ -98,6 +99,14 @@ endif()
 set(Argparse_TARGETS argparse)
 target_link_libraries(${RUNTIME_NAME} PRIVATE ${Argparse_TARGETS})
 target_include_directories(${RUNTIME_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/argparse-src")
+
+# Install third-party libs if wasm
+if (DEFINED EMSCRIPTEN)
+  set(prefix ${CMAKE_STATIC_LIBRARY_PREFIX})
+  set(suffix ${CMAKE_STATIC_LIBRARY_SUFFIX})
+  install(FILES $<TARGET_FILE:sundials_idas_static> RENAME ${prefix}sundials_idas_wasm${suffix} DESTINATION lib )
+  install(FILES $<TARGET_FILE:argparse> RENAME ${prefix}argparse_wasm${suffix} DESTINATION lib )
+endif()
 
 # Install library
 set_property(TARGET ${LIBRARY_NAME} PROPERTY INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
