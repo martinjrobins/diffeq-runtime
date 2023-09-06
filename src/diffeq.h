@@ -13,7 +13,11 @@
 #include <sunlinsol/sunlinsol_spgmr.h>
 #include <sunlinsol/sunlinsol_sptfqmr.h>
 
-#
+#ifdef EMSCRIPTEN
+  #include <emscripten.h>
+#else
+  #define EMSCRIPTEN_KEEPALIVE
+#endif
 
 typedef struct Vector {
   realtype *data;
@@ -21,11 +25,12 @@ typedef struct Vector {
   int capacity;
 } Vector;
 
-void Vector_destroy(Vector *vector);
-Vector *Vector_linspace_create(const realtype start, const realtype stop, const int len);
-Vector *Vector_create(const int len);
-Vector *Vector_create_with_capacity(const int len, const int capacity);
-void Vector_push(Vector *vector, const realtype value);
+EMSCRIPTEN_KEEPALIVE void Vector_destroy(Vector *vector);
+EMSCRIPTEN_KEEPALIVE Vector *Vector_linspace_create(const realtype start, const realtype stop, const int len);
+EMSCRIPTEN_KEEPALIVE Vector *Vector_create(const int len);
+EMSCRIPTEN_KEEPALIVE realtype Vector_get(Vector *vector, const int index);
+EMSCRIPTEN_KEEPALIVE Vector *Vector_create_with_capacity(const int len, const int capacity);
+EMSCRIPTEN_KEEPALIVE void Vector_push(Vector *vector, const realtype value);
 
 typedef struct Options {
     realtype atol;
@@ -39,8 +44,8 @@ typedef struct Options {
 
 /* Options functions */
 
-Options* Options_create(void);
-void Options_destroy(Options *options);
+EMSCRIPTEN_KEEPALIVE Options* Options_create(void);
+EMSCRIPTEN_KEEPALIVE void Options_destroy(Options *options);
 
 typedef struct SundialsData {
     size_t number_of_states;
@@ -68,10 +73,10 @@ typedef struct Sundials {
 
 /*  Sundials functions */
 
-Sundials *Sundials_create(void);
-int Sundials_init(Sundials *sundials, const Options *options);
-void Sundials_destroy(Sundials *sundials);
-int Sundials_solve(Sundials *sundials, const realtype *times, const size_t number_of_times, const realtype *inputs, realtype *outputs);
+EMSCRIPTEN_KEEPALIVE Sundials *Sundials_create(void);
+EMSCRIPTEN_KEEPALIVE int Sundials_init(Sundials *sundials, const Options *options);
+EMSCRIPTEN_KEEPALIVE void Sundials_destroy(Sundials *sundials);
+EMSCRIPTEN_KEEPALIVE int Sundials_solve(Sundials *sundials, const realtype *times, const size_t number_of_times, const realtype *inputs, realtype *outputs);
 
 
 /*

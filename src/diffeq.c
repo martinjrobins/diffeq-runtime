@@ -348,6 +348,10 @@ Vector *Vector_create(int len) {
     return Vector_create_with_capacity(len, len);
 }
 
+realtype Vector_get(Vector *vector, const int index) {
+    return vector->data[index];
+}
+
 void Vector_push(Vector *vector, realtype value) {
     if (vector->len == vector->capacity) {
         vector->capacity *= 2;

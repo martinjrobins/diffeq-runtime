@@ -16,6 +16,7 @@ endif()
 if (DEFINED EMSCRIPTEN)
   set(LIBRARY_NAME ${PROJECT_NAME}_lib_wasm)
   set(RUNTIME_NAME ${PROJECT_NAME}_wasm)
+  add_compile_definitions(EMSCRIPTEN)
 else()
   set(LIBRARY_NAME ${PROJECT_NAME}_lib)
   set(RUNTIME_NAME ${PROJECT_NAME})
@@ -31,6 +32,7 @@ set(C_STANDARD 99)
 add_library(${LIBRARY_NAME} ${SOURCE_FILES} ${HEADER_FILES})
 set_property(TARGET ${LIBRARY_NAME} PROPERTY C_STANDARD ${C_STANDARD}})
 target_include_directories(${LIBRARY_NAME} PUBLIC src)
+
 
 ## c runtime
 add_library(${RUNTIME_NAME} ${MAIN_FILE})
