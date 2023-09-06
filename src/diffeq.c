@@ -188,7 +188,25 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     return(0);
 }
 
-int Sundials_solve(Sundials *sundials, const realtype *times, const size_t number_of_times, const realtype *inputs, realtype *outputs) {
+
+int Sundials_number_of_inputs(Sundials *sundials) {
+    return sundials->data->number_of_inputs;
+}
+
+int Sundials_number_of_outputs(Sundials *sundials) {
+    return sundials->data->number_of_outputs;
+}
+
+int Sundials_number_of_states(Sundials *sundials) {
+    return sundials->data->number_of_states;
+}
+
+int Sundials_solve(Sundials *sundials, const Vector *times_vec, const Vector *inputs_vec, Vector *outputs_vec) {
+    const realtype *times = times_vec->data;
+    const realtype *inputs = inputs_vec->data;
+    realtype *outputs = outputs_vec->data;
+    int number_of_times = times_vec->len;
+
     int number_of_inputs = 0;
     int number_of_outputs = 0;
     int number_of_states = 0;
@@ -278,6 +296,10 @@ Sundials *Sundials_create() {
     int data_len = 0;
     int indices_len = 0;
     get_dims(&number_of_inputs, &number_of_outputs, &number_of_states, &data_len, &indices_len);
+    
+    sundials->data->number_of_inputs = number_of_inputs;
+    sundials->data->number_of_outputs = number_of_outputs;
+    sundials->data->number_of_states = number_of_states;
 
     sundials->model->data = malloc(data_len * sizeof(realtype));
     sundials->model->indices = malloc(indices_len * sizeof(int));

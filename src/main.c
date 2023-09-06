@@ -82,7 +82,7 @@ int main(int argc, const char *argv[]) {
 
     Vector *outputs = Vector_create(number_of_outputs * number_of_times);
 
-    retval = Sundials_solve(sundials, times->data, number_of_times, inputs->data, outputs->data);
+    retval = Sundials_solve(sundials, times, inputs, outputs);
     if (retval != 0) {
         printf("Error in Sundials_solve: %d\n", retval);
         return(retval);
