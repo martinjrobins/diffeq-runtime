@@ -67,8 +67,7 @@ include(FetchContent)
 set(FETCHCONTENT_BASE_DIR ${PROJECT_SOURCE_DIR}/third-party CACHE PATH "Directory to put third-party libs." FORCE)
 FetchContent_Declare(
   sundials 
-  GIT_REPOSITORY https://github.com/LLNL/sundials.git
-  GIT_TAG        v6.6.0
+  GIT_REPOSITORY https://github.com/martinjrobins/sundials.git
 )
 
 message("cmake module path is now ${CMAKE_MODULE_PATH}")
