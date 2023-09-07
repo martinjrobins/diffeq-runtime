@@ -68,6 +68,7 @@ set(FETCHCONTENT_BASE_DIR ${PROJECT_SOURCE_DIR}/third-party CACHE PATH "Director
 FetchContent_Declare(
   sundials 
   GIT_REPOSITORY https://github.com/martinjrobins/sundials.git
+  GIT_TAG        main
 )
 
 message("cmake module path is now ${CMAKE_MODULE_PATH}")
