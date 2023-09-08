@@ -374,6 +374,10 @@ realtype Vector_get(Vector *vector, const int index) {
     return vector->data[index];
 }
 
+realtype *Vector_get_data(Vector *vector) {
+    return vector->data;
+}
+
 void Vector_push(Vector *vector, realtype value) {
     if (vector->len == vector->capacity) {
         vector->capacity *= 2;

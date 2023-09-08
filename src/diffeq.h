@@ -29,6 +29,7 @@ EMSCRIPTEN_KEEPALIVE void Vector_destroy(Vector *vector);
 EMSCRIPTEN_KEEPALIVE Vector *Vector_linspace_create(const realtype start, const realtype stop, const int len);
 EMSCRIPTEN_KEEPALIVE Vector *Vector_create(const int len);
 EMSCRIPTEN_KEEPALIVE realtype Vector_get(Vector *vector, const int index);
+EMSCRIPTEN_KEEPALIVE realtype *Vector_get_data(Vector *vector);
 EMSCRIPTEN_KEEPALIVE Vector *Vector_create_with_capacity(const int len, const int capacity);
 EMSCRIPTEN_KEEPALIVE void Vector_push(Vector *vector, const realtype value);
 
