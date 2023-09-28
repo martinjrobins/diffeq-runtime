@@ -48,6 +48,10 @@ typedef struct Options {
 /* Options functions */
 
 EMSCRIPTEN_KEEPALIVE Options* Options_create(void);
+EMSCRIPTEN_KEEPALIVE void Options_set_fixed_times(Options *options, const int fixed_times);
+EMSCRIPTEN_KEEPALIVE int Options_get_fixed_times(Options *options);
+EMSCRIPTEN_KEEPALIVE void Options_set_print_stats(Options *options, const int print_stats);
+EMSCRIPTEN_KEEPALIVE int Options_get_print_stats(Options *options);
 EMSCRIPTEN_KEEPALIVE void Options_destroy(Options *options);
 
 typedef struct SundialsData {

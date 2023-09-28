@@ -368,6 +368,7 @@ void Sundials_destroy(Sundials *sundials) {
 Options *Options_create() {
     Options *options = malloc(sizeof(Options));
     options->print_stats = 0;
+    options->fixed_times = 0;
     options->jacobian = "dense";
     options->linear_solver = "SUNLinSol_Dense";
     options->preconditioner = "none";
@@ -379,6 +380,22 @@ Options *Options_create() {
 
 void Options_destroy(Options *options) {
     free(options);
+}
+
+void Options_set_print_stats(Options *options, const int print_stats) {
+    options->print_stats = print_stats;
+}
+
+void Options_set_fixed_times(Options *options, const int fixed_times) {
+    options->fixed_times = fixed_times;
+}
+
+int Options_get_fixed_times(Options *options) {
+    return options->fixed_times;
+}
+
+int Options_get_print_stats(Options *options) {
+    return options->print_stats;
 }
 
 Vector *Vector_linspace_create(realtype start, realtype stop, int len) {
