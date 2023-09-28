@@ -33,6 +33,7 @@ EMSCRIPTEN_KEEPALIVE realtype *Vector_get_data(Vector *vector);
 EMSCRIPTEN_KEEPALIVE Vector *Vector_create_with_capacity(const int len, const int capacity);
 EMSCRIPTEN_KEEPALIVE void Vector_push(Vector *vector, const realtype value);
 EMSCRIPTEN_KEEPALIVE void Vector_resize(Vector *vector, const int len);
+EMSCRIPTEN_KEEPALIVE int Vector_get_length(Vector *vector);
 
 typedef struct Options {
     realtype atol;

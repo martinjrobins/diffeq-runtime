@@ -454,3 +454,7 @@ void Vector_resize(Vector *vector, int len) {
     vector->len = len;
 }
 
+int Vector_get_length(Vector *vector) {
+    return vector->len;
+}
+
