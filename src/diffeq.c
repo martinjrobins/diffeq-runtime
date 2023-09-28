@@ -201,11 +201,20 @@ int Sundials_number_of_states(Sundials *sundials) {
     return sundials->data->number_of_states;
 }
 
-int Sundials_solve(Sundials *sundials, const Vector *times_vec, const Vector *inputs_vec, Vector *outputs_vec) {
-    const realtype *times = times_vec->data;
+int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_vec, Vector *outputs_vec) {
+    if (sundials->data->options->fixed_times) {
+        if (times_vec->len < 2) {
+            printf("fixed_times option is set, but times vector has length %d < 2", times_vec->len);
+            return(1);
+        }
+    } else {
+        if (times_vec->len != 2) {
+            printf("fixed_times option is not set, but times vector has length %d instead of 2", times_vec->len);
+            return(1);
+        }
+    }
+
     const realtype *inputs = inputs_vec->data;
-    realtype *outputs = outputs_vec->data;
-    int number_of_times = times_vec->len;
 
     int number_of_inputs = 0;
     int number_of_outputs = 0;
@@ -218,41 +227,75 @@ int Sundials_solve(Sundials *sundials, const Vector *times_vec, const Vector *in
     set_inputs(inputs, sundials->model->data);
     set_u0(sundials->model->data, sundials->model->indices, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yp));
 
+
     realtype *output;
     int tensor_size;
     get_out(sundials->model->data , &output, &tensor_size);
 
-    realtype t0 = times[0];
+    realtype t0 = Vector_get(times_vec, 0);
 
     retval = IDAReInit(sundials->ida_mem, t0, sundials->data->yy, sundials->data->yp);
     if (check_retval(&retval, "IDAReInit", 0)) return(1);
 
-    retval = IDACalcIC(sundials->ida_mem, IDA_YA_YDP_INIT, times[1]);
+    retval = IDACalcIC(sundials->ida_mem, IDA_YA_YDP_INIT, Vector_get(times_vec, 1));
     if (check_retval(&retval, "IDACalcIC", 0)) return(1);
 
     retval = IDAGetConsistentIC(sundials->ida_mem, sundials->data->yy, sundials->data->yp);
     if (check_retval(&retval, "IDAGetConsistentIC", 0)) return(1);
             
     calc_out(t0, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yp), sundials->model->data, sundials->model->indices);
+
+    // init output and save initial state
+    Vector_resize(outputs_vec, 0);
     for (int j = 0; j < number_of_outputs; j++) {
-        outputs[j] = output[j];
+        Vector_push(outputs_vec, output[j]);
     }
 
-    realtype t_final = times[number_of_times - 1];
-    for (int i = 1; i < number_of_times; i++) {
-        realtype t_next = times[i];
-        retval = IDASetStopTime(sundials->ida_mem, t_next);
-        if (check_retval(&retval, "IDASetStopTime", 0)) return(1);
+    int itask = IDA_ONE_STEP;
+    if (sundials->data->options->fixed_times) {
+        itask = IDA_NORMAL;
+    }
+    realtype t_final = Vector_get(times_vec, times_vec->len - 1);
 
+    if (!sundials->data->options->fixed_times) {
+        // if using solver times save initial time point and get rid of the rest
+        Vector_resize(times_vec, 1);
+    }
+
+    // set stop time as final time point
+    retval = IDASetStopTime(sundials->ida_mem, t_final);
+    if (check_retval(&retval, "IDASetStopTime", 0)) return(1);
+    int i = 0;
+    realtype t_next = t_final;
+    while(1) {
+        // advance to next time point
+        i++;
+
+        // if using fixed times set next time point
+        if (sundials->data->options->fixed_times) {
+            t_next = Vector_get(times_vec, i);
+        }
+
+        // solve up to next/final time point
         realtype tret;
-        retval = IDASolve(sundials->ida_mem, t_final, &tret, sundials->data->yy, sundials->data->yp, IDA_NORMAL);
+        retval = IDASolve(sundials->ida_mem, t_next, &tret, sundials->data->yy, sundials->data->yp, itask);
         if (check_retval(&retval, "IDASolve", 0)) return(1);
 
-        calc_out(t_next, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yp), sundials->model->data, sundials->model->indices);
+        // get output (calculated into output array)
+        calc_out(tret, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yp), sundials->model->data, sundials->model->indices);
+
+        // save output
         for (int j = 0; j < number_of_outputs; j++) {
-            outputs[i * number_of_outputs + j] = output[j];
+            Vector_push(outputs_vec, output[j]);
         }
-        if (retval == IDA_SUCCESS || retval == IDA_ROOT_RETURN) {
+
+        // if using solver times save time point
+        if (!sundials->data->options->fixed_times) {
+            Vector_push(times_vec, tret);
+        }
+
+        // if finished break
+        if (retval == IDA_TSTOP_RETURN) {
             break;
         }
     }
@@ -384,5 +427,13 @@ void Vector_push(Vector *vector, realtype value) {
         vector->data = realloc(vector->data, vector->capacity * sizeof(realtype));
     }
     vector->data[vector->len++] = value;
+}
+
+void Vector_resize(Vector *vector, int len) {
+    if (len > vector->capacity) {
+        vector->capacity = len;
+        vector->data = realloc(vector->data, vector->capacity * sizeof(realtype));
+    }
+    vector->len = len;
 }
 

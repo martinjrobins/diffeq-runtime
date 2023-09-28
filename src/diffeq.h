@@ -32,11 +32,13 @@ EMSCRIPTEN_KEEPALIVE realtype Vector_get(Vector *vector, const int index);
 EMSCRIPTEN_KEEPALIVE realtype *Vector_get_data(Vector *vector);
 EMSCRIPTEN_KEEPALIVE Vector *Vector_create_with_capacity(const int len, const int capacity);
 EMSCRIPTEN_KEEPALIVE void Vector_push(Vector *vector, const realtype value);
+EMSCRIPTEN_KEEPALIVE void Vector_resize(Vector *vector, const int len);
 
 typedef struct Options {
     realtype atol;
     realtype rtol;
     int print_stats;       // 0 for false, 1 for true
+    int fixed_times;      // 0 for false, 1 for true
     char* jacobian;        // C-style string
     char* linear_solver;   // C-style string
     char* preconditioner;  // C-style string
@@ -78,7 +80,7 @@ typedef struct Sundials {
 EMSCRIPTEN_KEEPALIVE Sundials *Sundials_create(void);
 EMSCRIPTEN_KEEPALIVE int Sundials_init(Sundials *sundials, const Options *options);
 EMSCRIPTEN_KEEPALIVE void Sundials_destroy(Sundials *sundials);
-EMSCRIPTEN_KEEPALIVE int Sundials_solve(Sundials *sundials, const Vector *times, const Vector *inputs, Vector *outputs);
+EMSCRIPTEN_KEEPALIVE int Sundials_solve(Sundials *sundials, Vector *times, const Vector *inputs, Vector *outputs);
 EMSCRIPTEN_KEEPALIVE int Sundials_number_of_inputs(Sundials *sundials);
 EMSCRIPTEN_KEEPALIVE int Sundials_number_of_outputs(Sundials *sundials);
 EMSCRIPTEN_KEEPALIVE int Sundials_number_of_states(Sundials *sundials);

@@ -32,11 +32,13 @@ int main(int argc, const char *argv[]) {
     const char *path = NULL;
     char *inputs_str = NULL;
     char *times_str = NULL;
+    int use_fixed_times = 0;
     struct argparse_option argparse_options[] = {
         OPT_HELP(),
         OPT_STRING('c', "config", &path, "path to configuration file", NULL, 0, 0),
         OPT_STRING('i', "inputs", &inputs_str, "input vector in csv format", NULL, 0, 0),
         OPT_STRING('t', "times", &times_str, "times vector in csv format", NULL, 0, 0),
+        OPT_BOOLEAN('f', "use_fixed_times", &use_fixed_times, "Output at the times given (if unset then solver time points are used and times must be length 2 of the form [start_time, finish_time])", NULL, 0, 0),
         OPT_END(),
     };
 
@@ -69,18 +71,22 @@ int main(int argc, const char *argv[]) {
         return(1);
     }
     Vector *times = read_csv_vector(times_str, -1);
-    int number_of_times = times->len;
+    if (times->len < 2) {
+        printf("Error: times vector length (%d) must be at least 2\n", times->len);
+        return(1);
+    }
 
     int retval = 0;
     Sundials* sundials = Sundials_create();
     Options* options = Options_create();
+    options->fixed_times = use_fixed_times;
     retval = Sundials_init(sundials, options);
     if (retval != 0) {
         printf("Error in Sundials_init: %d\n", retval);
         return(retval);
     }
 
-    Vector *outputs = Vector_create(number_of_outputs * number_of_times);
+    Vector *outputs = Vector_create(number_of_outputs * times->len);
 
     retval = Sundials_solve(sundials, times, inputs, outputs);
     if (retval != 0) {
@@ -89,7 +95,8 @@ int main(int argc, const char *argv[]) {
     }
 
     /* write output to stdout in csv format */
-    for (int i = 0; i < number_of_times; i++) {
+    for (int i = 0; i < times->len; i++) {
+        printf("%f,", times->data[i]);
         for (int j = 0; j < number_of_outputs; j++) {
             printf("%f", outputs->data[i * number_of_outputs + j]);
             if (j < number_of_outputs - 1) {

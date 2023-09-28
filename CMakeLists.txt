@@ -60,7 +60,8 @@ add_executable(logistic_growth_test)
 set_property(TARGET logistic_growth_test PROPERTY LINKER_LANGUAGE C)
 target_link_libraries(logistic_growth_test PRIVATE ${RUNTIME_NAME} logistic_growth)
 
-add_test(NAME logistic_growth_test COMMAND ${CMAKE_SOURCE_DIR}/tests/logistic_growth_test.sh )
+add_test(NAME logistic_growth_fixed_times_test COMMAND ${CMAKE_SOURCE_DIR}/tests/logistic_growth_fixed_times_test.sh )
+add_test(NAME logistic_growth_solver_times_test COMMAND ${CMAKE_SOURCE_DIR}/tests/logistic_growth_solver_times_test.sh )
 
 # Add Sundials
 include(FetchContent)
