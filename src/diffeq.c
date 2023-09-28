@@ -57,7 +57,7 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     int number_of_states = 0;
     int data_len = 0;
     int indices_len = 0;
-    get_dims(&number_of_inputs, &number_of_outputs, &number_of_states, &data_len, &indices_len);
+    get_dims(&number_of_states, &number_of_inputs, &number_of_outputs, &data_len, &indices_len);
 
     int retval;
 
@@ -221,7 +221,7 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
     int number_of_states = 0;
     int data_len = 0;
     int indices_len = 0;
-    get_dims(&number_of_inputs, &number_of_outputs, &number_of_states, &data_len, &indices_len);
+    get_dims(&number_of_states, &number_of_inputs, &number_of_outputs, &data_len, &indices_len);
 
     int retval;
     set_inputs(inputs, sundials->model->data);
@@ -338,7 +338,7 @@ Sundials *Sundials_create() {
     int number_of_states = 0;
     int data_len = 0;
     int indices_len = 0;
-    get_dims(&number_of_inputs, &number_of_outputs, &number_of_states, &data_len, &indices_len);
+    get_dims(&number_of_states, &number_of_inputs, &number_of_outputs, &data_len, &indices_len);
     
     sundials->data->number_of_inputs = number_of_inputs;
     sundials->data->number_of_outputs = number_of_outputs;
