@@ -63,7 +63,7 @@ int Sundials_init(Sundials *sundials, const Options *options) {
 
 
     retval = SUNContext_Create(NULL, &sundials->sunctx);
-    if (check_retval(&retval, "SUNContext_Create", 0)) return(1);
+    if (check_retval(&retval, "SUNContext_Create", 1)) return(1);
 
     void *ida_mem = IDACreate(sundials->sunctx);
     if (check_retval((void *)ida_mem, "IDACreate", 0)) return(1);
@@ -83,11 +83,11 @@ int Sundials_init(Sundials *sundials, const Options *options) {
             
     // initialise solver
     retval = IDAInit(ida_mem, sundials_residual, 0.0, yy, yp);
-    if (check_retval(&retval, "IDAInit", 0)) return(1);
+    if (check_retval(&retval, "IDAInit", 1)) return(1);
 
     // set tolerances
     retval = IDASVtolerances(ida_mem, options->rtol, avtol);
-    if (check_retval(&retval, "IDASVtolerances", 0)) return(1);
+    if (check_retval(&retval, "IDASVtolerances", 1)) return(1);
 
     // set events
     //IDARootInit(ida_mem, number_of_events, events_casadi);
@@ -141,7 +141,7 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     };
 
     retval = IDASetLinearSolver(ida_mem, linear_solver, jacobian);
-    if (check_retval(&retval, "IDASetLinearSolver", 0)) return(1);
+    if (check_retval(&retval, "IDASetLinearSolver", 1)) return(1);
 
     if (strcmp(options->preconditioner, "none") != 0) {
         printf("preconditioner not implemented");
@@ -166,14 +166,14 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     }
 
     retval = SUNLinSolInitialize(linear_solver);
-    if (check_retval(&retval, "SUNLinSolInitialize", 0)) return(1);
+    if (check_retval(&retval, "SUNLinSolInitialize", 1)) return(1);
 
     set_id(N_VGetArrayPointer(id));
     retval = IDASetId(ida_mem, id);
-    if (check_retval(&retval, "IDASetId", 0)) return(1);
+    if (check_retval(&retval, "IDASetId", 1)) return(1);
 
     retval = IDASetUserData(ida_mem, (void *)sundials);
-    if (check_retval(&retval, "IDASetUserData", 0)) return(1);
+    if (check_retval(&retval, "IDASetUserData", 1)) return(1);
 
 
     // setup sundials fields
@@ -235,13 +235,13 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
     realtype t0 = Vector_get(times_vec, 0);
 
     retval = IDAReInit(sundials->ida_mem, t0, sundials->data->yy, sundials->data->yp);
-    if (check_retval(&retval, "IDAReInit", 0)) return(1);
+    if (check_retval(&retval, "IDAReInit", 1)) return(1);
 
     retval = IDACalcIC(sundials->ida_mem, IDA_YA_YDP_INIT, Vector_get(times_vec, 1));
-    if (check_retval(&retval, "IDACalcIC", 0)) return(1);
+    if (check_retval(&retval, "IDACalcIC", 1)) return(1);
 
     retval = IDAGetConsistentIC(sundials->ida_mem, sundials->data->yy, sundials->data->yp);
-    if (check_retval(&retval, "IDAGetConsistentIC", 0)) return(1);
+    if (check_retval(&retval, "IDAGetConsistentIC", 1)) return(1);
             
     calc_out(t0, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yp), sundials->model->data, sundials->model->indices);
 
@@ -264,7 +264,7 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
 
     // set stop time as final time point
     retval = IDASetStopTime(sundials->ida_mem, t_final);
-    if (check_retval(&retval, "IDASetStopTime", 0)) return(1);
+    if (check_retval(&retval, "IDASetStopTime", 1)) return(1);
     int i = 0;
     realtype t_next = t_final;
     while(1) {
@@ -279,7 +279,7 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
         // solve up to next/final time point
         realtype tret;
         retval = IDASolve(sundials->ida_mem, t_next, &tret, sundials->data->yy, sundials->data->yp, itask);
-        if (check_retval(&retval, "IDASolve", 0)) return(1);
+        if (check_retval(&retval, "IDASolve", 1)) return(1);
 
         // get output (calculated into output array)
         calc_out(tret, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yp), sundials->model->data, sundials->model->indices);
@@ -293,23 +293,23 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
         if (!sundials->data->options->fixed_times) {
             Vector_push(times_vec, tret);
         }
-
+        
         // if finished or errored break
         if (retval == IDA_TSTOP_RETURN || retval < 0) {
             break;
         }
     }
-
+    
     if (sundials->data->options->print_stats) {
         int klast, kcur;
         long int netfails, nlinsetups, nfevals, nsteps;
         realtype hinused, hlast, hcur, tcur;
         retval = IDAGetIntegratorStats(sundials->ida_mem, &nsteps, &nfevals, &nlinsetups, &netfails, &klast, &kcur, &hinused, &hlast, &hcur, &tcur);
-        if (check_retval(&retval, "IDAGetIntegratorStats", 0)) return(1);
+        if (check_retval(&retval, "IDAGetIntegratorStats", 1)) return(1);
 
         long int nniters, nncfails;
         retval = IDAGetNonlinSolvStats(sundials->ida_mem, &nniters, &nncfails);
-        if (check_retval(&retval, "IDAGetNonlinSolvStats", 0)) return(1);
+        if (check_retval(&retval, "IDAGetNonlinSolvStats", 1)) return(1);
 
         printf("Solver Stats:\n");
         printf("\tNumber of steps = %ld\n", nsteps);
