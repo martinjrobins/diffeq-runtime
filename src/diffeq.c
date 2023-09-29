@@ -294,8 +294,8 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
             Vector_push(times_vec, tret);
         }
 
-        // if finished break
-        if (retval == IDA_TSTOP_RETURN) {
+        // if finished or errored break
+        if (retval == IDA_TSTOP_RETURN || retval < 0) {
             break;
         }
     }
