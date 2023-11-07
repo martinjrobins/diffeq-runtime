@@ -29,13 +29,12 @@ set(MAIN_FILE src/main.c)
 set(C_STANDARD 99)
 
 ## library
-add_library(${LIBRARY_NAME} ${SOURCE_FILES} ${HEADER_FILES})
+add_library(${LIBRARY_NAME} STATIC ${SOURCE_FILES} ${HEADER_FILES})
 set_property(TARGET ${LIBRARY_NAME} PROPERTY C_STANDARD ${C_STANDARD}})
 target_include_directories(${LIBRARY_NAME} PUBLIC src)
 
-
 ## c runtime
-add_library(${RUNTIME_NAME} ${MAIN_FILE})
+add_library(${RUNTIME_NAME} STATIC ${MAIN_FILE})
 set_property(TARGET ${RUNTIME_NAME} PROPERTY C_STANDARD ${C_STANDARD})
 target_link_libraries(${RUNTIME_NAME} PRIVATE ${LIBRARY_NAME})
 
@@ -65,7 +64,7 @@ add_test(NAME logistic_growth_solver_times_test COMMAND ${CMAKE_SOURCE_DIR}/test
 
 # Add Sundials
 include(FetchContent)
-set(FETCHCONTENT_BASE_DIR ${PROJECT_SOURCE_DIR}/third-party CACHE PATH "Directory to put third-party libs." FORCE)
+set(FETCHCONTENT_BASE_DIR ${PROJECT_BINARY_DIR} CACHE PATH "Directory to put third-party libs." FORCE)
 FetchContent_Declare(
   sundials 
   GIT_REPOSITORY https://github.com/martinjrobins/sundials.git
@@ -73,6 +72,7 @@ FetchContent_Declare(
 )
 
 message("cmake module path is now ${CMAKE_MODULE_PATH}")
+set(ENABLE_KLU ON CACHE BOOL "Enable KLU")
 FetchContent_GetProperties(sundials)
 if(NOT sundials_POPULATED)
   FetchContent_Populate(sundials)
@@ -80,11 +80,11 @@ if(NOT sundials_POPULATED)
 endif()
 
 set(Sundials_TARGETS 
-    sundials_idas
+    sundials_idas_static
+    sundials_sunlinsolklu_static
 )
 
-target_link_libraries(${LIBRARY_NAME} PRIVATE ${Sundials_TARGETS})
-target_include_directories(${LIBRARY_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/sundials-src/include" "${FETCHCONTENT_BASE_DIR}/sundials-build/include")
+target_link_libraries(${LIBRARY_NAME} PUBLIC ${Sundials_TARGETS})
 
 # Add argparse
 FetchContent_Declare(

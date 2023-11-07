@@ -31,12 +31,14 @@ int main(int argc, const char *argv[]) {
 
     const char *path = NULL;
     char *inputs_str = NULL;
+    char *dinputs_str = NULL;
     char *times_str = NULL;
     int use_fixed_times = 0;
     struct argparse_option argparse_options[] = {
         OPT_HELP(),
         OPT_STRING('c', "config", &path, "path to configuration file", NULL, 0, 0),
         OPT_STRING('i', "inputs", &inputs_str, "input vector in csv format", NULL, 0, 0),
+        OPT_STRING('d', "dinputs", &dinputs_str, "tangent of input vector in csv format", NULL, 0, 0),
         OPT_STRING('t', "times", &times_str, "times vector in csv format", NULL, 0, 0),
         OPT_BOOLEAN('f', "use_fixed_times", &use_fixed_times, "Output at the times given (if unset then solver time points are used and times must be length 2 of the form [start_time, finish_time])", NULL, 0, 0),
         OPT_END(),
@@ -66,6 +68,17 @@ int main(int argc, const char *argv[]) {
         return(1);
     }
 
+    int fwd_sens = 0;
+    Vector *dinputs = NULL;
+    if (dinputs_str != NULL) {
+        dinputs = read_csv_vector(dinputs_str, number_of_inputs);
+        if (dinputs->len != number_of_inputs) {
+            printf("Error: dinputs vector length (%d) does not match number of inputs (%d)\n", inputs->len, number_of_inputs);
+            return(1);
+        }
+        fwd_sens = 1;
+    }
+
     if (times_str == NULL) {
         printf("Error: times not specified\n");
         return(1);
@@ -80,15 +93,17 @@ int main(int argc, const char *argv[]) {
     Sundials* sundials = Sundials_create();
     Options* options = Options_create();
     options->fixed_times = use_fixed_times;
-    retval = Sundials_init(sundials, options);
+    options->fwd_sens = fwd_sens;
+    retval = Sundials_init_dense(sundials, options);
     if (retval != 0) {
         printf("Error in Sundials_init: %d\n", retval);
         return(retval);
     }
 
     Vector *outputs = Vector_create(number_of_outputs * times->len);
+    Vector *doutputs = Vector_create(number_of_outputs * times->len);
 
-    retval = Sundials_solve(sundials, times, inputs, outputs);
+    retval = Sundials_solve_dense(sundials, times, inputs, dinputs, outputs, doutputs);
     if (retval != 0) {
         printf("Error in Sundials_solve: %d\n", retval);
         return(retval);
@@ -99,6 +114,9 @@ int main(int argc, const char *argv[]) {
         printf("%f,", times->data[i]);
         for (int j = 0; j < number_of_outputs; j++) {
             printf("%f", outputs->data[i * number_of_outputs + j]);
+            if (fwd_sens) {
+                printf(",%f", doutputs->data[i * number_of_outputs + j]);
+            }
             if (j < number_of_outputs - 1) {
                 printf(",");
             } else {
