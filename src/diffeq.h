@@ -20,6 +20,44 @@
   #define EMSCRIPTEN_KEEPALIVE
 #endif
 
+#ifdef NDEBUG
+  #define DEBUG(x)
+#else
+  #define DEBUG(x) do { printf("%s:%d ", __FILE__, __LINE__); printf(x); putchar('\n'); } while (0)
+#endif
+
+#ifdef NDEBUG
+  #define DEBUG_VECTOR(vector)
+  #define DEBUG_VECTORn(vector)
+#else
+
+  #define DEBUG_VECTORn(vector, N) {\
+    printf("%s[n=%d] = [", #vector, N); \
+    realtype* array_ptr = N_VGetArrayPointer(vector); \
+    for (int i = 0; i < N; i++) { \
+      printf("%f", array_ptr[i]); \
+      if (i < N-1) { \
+        printf(", "); \
+      } \
+    } \
+    printf("]\n"); \
+  }
+
+  #define DEBUG_VECTOR(vector) {\
+    printf("%s = [", #vector); \
+    realtype* array_ptr = N_VGetArrayPointer(vector); \
+    int N = N_VGetLength(vector); \
+    for (int i = 0; i < N; i++) { \
+      printf("%f", array_ptr[i]); \
+      if (i < N-1) { \
+        printf(", "); \
+      } \
+    } \
+    printf("]\n"); \
+  }
+
+#endif
+
 typedef struct Vector {
   realtype *data;
   int len;
@@ -47,6 +85,7 @@ EMSCRIPTEN_KEEPALIVE void VectorInt_push(VectorInt *vector, const sunindextype v
 EMSCRIPTEN_KEEPALIVE void Vector_resize(Vector *vector, const int len);
 EMSCRIPTEN_KEEPALIVE void VectorInt_resize(VectorInt *vector, const int len);
 EMSCRIPTEN_KEEPALIVE int Vector_get_length(Vector *vector);
+void Vector_printf(Vector *vector);
 
 typedef struct MatrixCSC {
   Vector *data;

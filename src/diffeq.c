@@ -67,10 +67,10 @@ int sundials_jacobian(realtype t, realtype cj, N_Vector y, N_Vector yp, N_Vector
         for (int j = 0; j < sundials->data->number_of_states; j++) {
             if (j == i) {
                 yyS_[j] = 1;
-                ypS_[i] = cj;
+                ypS_[j] = cj;
             } else {
                 yyS_[j] = 0;
-                ypS_[i] = 0;
+                ypS_[j] = 0;
             }
         }
 
@@ -267,6 +267,8 @@ int Sundials_init_dense(Sundials *sundials, const Options *options) {
         if (check_retval((void *)yyS, "N_VNew_Serial", 0)) return(1);
         ypS = N_VNew_Serial(number_of_states, sundials->sunctx);
         if (check_retval((void *)ypS, "N_VNew_Serial", 0)) return(1);
+        N_VConst(RCONST(0.0), yyS);
+        N_VConst(RCONST(0.0), ypS);
     }
     
     // set tolerances
@@ -279,6 +281,11 @@ int Sundials_init_dense(Sundials *sundials, const Options *options) {
     // set tolerances
     retval = IDASVtolerances(ida_mem, options->rtol, avtol);
     if (check_retval(&retval, "IDASVtolerances", 1)) return(1);
+
+
+    // set user data
+    retval = IDASetUserData(ida_mem, (void *)sundials);
+    if (check_retval(&retval, "IDASetUserData", 1)) return(1);
 
     // set events
     //IDARootInit(ida_mem, number_of_events, events_casadi);
@@ -369,8 +376,6 @@ int Sundials_init_dense(Sundials *sundials, const Options *options) {
     retval = IDASetId(ida_mem, id);
     if (check_retval(&retval, "IDASetId", 1)) return(1);
 
-    retval = IDASetUserData(ida_mem, (void *)sundials);
-    if (check_retval(&retval, "IDASetUserData", 1)) return(1);
 
 
     // setup sundials fields
@@ -414,7 +419,14 @@ int Sundials_solve_dense(Sundials *sundials, Vector *times_vec, const Vector *in
     }
 
     const realtype *inputs = inputs_vec->data;
-    const realtype *dinputs = dinputs_vec->data;
+    const realtype *dinputs = NULL;
+    if (sundials->data->options->fwd_sens) {
+        if (!dinputs_vec) {
+            printf("fwd_sens option is set, but dinputs vector is NULL");
+            return(1);
+        }
+        dinputs = dinputs_vec->data;
+    }
 
     int number_of_inputs = 0;
     int number_of_outputs = 0;
@@ -426,10 +438,6 @@ int Sundials_solve_dense(Sundials *sundials, Vector *times_vec, const Vector *in
     int retval;
     
     if (sundials->data->options->fwd_sens) {
-        // clear sensitivities
-        for (int i = 0; i < data_len; i++) {
-            sundials->model->data_sens[i] = 0;
-        }
         set_inputs_grad(inputs, dinputs, sundials->model->data, sundials->model->data_sens);
         set_u0_grad(sundials->model->data, sundials->model->data_sens, sundials->model->indices, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), N_VGetArrayPointer(sundials->data->yp), N_VGetArrayPointer(sundials->data->ypS));
     } else {
@@ -505,6 +513,8 @@ int Sundials_solve_dense(Sundials *sundials, Vector *times_vec, const Vector *in
 
         // get output (calculated into output and doutput array)
         if (sundials->data->options->fwd_sens) {
+            int retval_fwd_sens = IDAGetSens1(sundials->ida_mem, &tret, 0, sundials->data->yyS);
+            if (check_retval(&retval_fwd_sens, "IDAGetSens1", 1)) return(1);
             calc_out_grad(tret, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), N_VGetArrayPointer(sundials->data->yp), N_VGetArrayPointer(sundials->data->ypS), sundials->model->data, sundials->model->data_sens, sundials->model->indices);
         } else {
             calc_out(tret, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yp), sundials->model->data, sundials->model->indices);
@@ -580,6 +590,12 @@ Sundials *Sundials_create() {
     sundials->model->data = malloc(number_of_data * sizeof(realtype));
     sundials->model->data_jacobian = malloc(number_of_data * sizeof(realtype));
     sundials->model->data_sens = malloc(number_of_data * sizeof(realtype));
+    // initialise data to zero
+    for (int i = 0; i < number_of_data; i++) {
+        sundials->model->data[i] = 0;
+        sundials->model->data_jacobian[i] = 0;
+        sundials->model->data_sens[i] = 0;
+    }
     sundials->model->indices = malloc(number_of_indices * sizeof(int));
     return sundials;
 }
@@ -748,5 +764,15 @@ void VectorInt_resize(VectorInt *vector, int len) {
     vector->len = len;
 }
 
+void Vector_printf(Vector *vector) {
+    printf("[");
+    for (int i = 0; i < vector->len; i++) {
+        printf("%f", vector->data[i]);
+        if (i < vector->len - 1) {
+            printf(", ");
+        }
+    }
+    printf("]\n");
+}
 
 

@@ -73,6 +73,8 @@ FetchContent_Declare(
 
 message("cmake module path is now ${CMAKE_MODULE_PATH}")
 set(ENABLE_KLU ON CACHE BOOL "Enable KLU")
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared library")
+
 FetchContent_GetProperties(sundials)
 if(NOT sundials_POPULATED)
   FetchContent_Populate(sundials)
@@ -82,9 +84,20 @@ endif()
 set(Sundials_TARGETS 
     sundials_idas_static
     sundials_sunlinsolklu_static
+    sundials_sunmatrixsparse_static
 )
 
 target_link_libraries(${LIBRARY_NAME} PUBLIC ${Sundials_TARGETS})
+
+if (NOT DEFINED EMSCRIPTEN)
+  find_package(OpenMP)
+  if(OpenMP_C_FOUND)
+      message(INFO "OpenMP found")
+      target_link_libraries(${LIBRARY_NAME} PUBLIC OpenMP::OpenMP_C)
+  else()
+      message(WARNING "OpenMP not found")
+  endif()
+endif()
 
 # Add argparse
 FetchContent_Declare(
@@ -93,6 +106,7 @@ FetchContent_Declare(
   GIT_TAG        v1.1.0
 )
 
+set(ARGPARSE_SHARED OFF CACHE BOOL "Build shared library")
 FetchContent_GetProperties(argparse)
 if(NOT argparse_POPULATED)
   FetchContent_Populate(argparse)
