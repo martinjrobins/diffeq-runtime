@@ -235,7 +235,7 @@ MatrixCSC *Sundials_create_jacobian(Sundials *sundials) {
 
 }
 
-int Sundials_init_dense(Sundials *sundials, const Options *options) {
+int Sundials_init(Sundials *sundials, const Options *options) {
     int number_of_inputs = 0;
     int number_of_outputs = 0;
     int number_of_states = 0;
@@ -405,7 +405,7 @@ int Sundials_number_of_states(Sundials *sundials) {
     return sundials->data->number_of_states;
 }
 
-int Sundials_solve_dense(Sundials *sundials, Vector *times_vec, const Vector *inputs_vec, const Vector *dinputs_vec, Vector *outputs_vec, Vector *doutputs_vec) {
+int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_vec, const Vector *dinputs_vec, Vector *outputs_vec, Vector *doutputs_vec) {
     if (sundials->data->options->fixed_times) {
         if (times_vec->len < 2) {
             printf("fixed_times option is set, but times vector has length %d < 2", times_vec->len);

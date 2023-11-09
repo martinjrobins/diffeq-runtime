@@ -94,7 +94,7 @@ int main(int argc, const char *argv[]) {
     Options* options = Options_create();
     options->fixed_times = use_fixed_times;
     options->fwd_sens = fwd_sens;
-    retval = Sundials_init_dense(sundials, options);
+    retval = Sundials_init(sundials, options);
     if (retval != 0) {
         printf("Error in Sundials_init: %d\n", retval);
         return(retval);
@@ -103,7 +103,7 @@ int main(int argc, const char *argv[]) {
     Vector *outputs = Vector_create(number_of_outputs * times->len);
     Vector *doutputs = Vector_create(number_of_outputs * times->len);
 
-    retval = Sundials_solve_dense(sundials, times, inputs, dinputs, outputs, doutputs);
+    retval = Sundials_solve(sundials, times, inputs, dinputs, outputs, doutputs);
     if (retval != 0) {
         printf("Error in Sundials_solve: %d\n", retval);
         return(retval);

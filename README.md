@@ -23,6 +23,8 @@ git checkout v0.3.24
 mkdir build
 cd build
 cmake -DCMAKE_LIBRARY_PATH=${PWD}/../../lib -DCMAKE_INSTALL_PREFIX=${PWD}/../.. -DBUILD_SHARED_LIBS=OFF -DTARGET=generic  -DC_LAPACK=ON -DNOFORTRAN=ON  ..
+make
+make install
 ```
 
 ### Configure and build SuiteSparse
@@ -35,6 +37,8 @@ git checkout i424-build-shared-libs
 mkdir build
 cd build
 cmake -DCMAKE_LIBRARY_PATH=${PWD}/../../lib -DCMAKE_INSTALL_PREFIX=${PWD}/../.. -DSUITESPARSE_ENABLE_PROJECTS=klu -DBUILD_SHARED_LIBS=OFF -DTARGET=generic -DNOPENMP=ON -DNPARTITION=ON ..
+make
+make install
 ~~~
 
 ### Configure project

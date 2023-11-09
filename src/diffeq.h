@@ -180,10 +180,8 @@ typedef struct Sundials {
 
 EMSCRIPTEN_KEEPALIVE Sundials *Sundials_create(void);
 EMSCRIPTEN_KEEPALIVE void Sundials_destroy(Sundials *sundials);
-EMSCRIPTEN_KEEPALIVE int Sundials_init_dense(Sundials *sundials, const Options *options);
-EMSCRIPTEN_KEEPALIVE int Sundials_solve_dense(Sundials *sundials, Vector *times, const Vector *inputs, const Vector *dinputs, Vector *outputs, Vector *doutputs);
-EMSCRIPTEN_KEEPALIVE int Sundials_init_iterative(Sundials *sundials, const Options *options);
-EMSCRIPTEN_KEEPALIVE int Sundials_solve_iterative(Sundials *sundials, Vector *times, const Vector *inputs, Vector *outputs);
+EMSCRIPTEN_KEEPALIVE int Sundials_init(Sundials *sundials, const Options *options);
+EMSCRIPTEN_KEEPALIVE int Sundials_solve(Sundials *sundials, Vector *times, const Vector *inputs, const Vector *dinputs, Vector *outputs, Vector *doutputs);
 EMSCRIPTEN_KEEPALIVE int Sundials_number_of_inputs(Sundials *sundials);
 EMSCRIPTEN_KEEPALIVE int Sundials_number_of_outputs(Sundials *sundials);
 EMSCRIPTEN_KEEPALIVE int Sundials_number_of_states(Sundials *sundials);
