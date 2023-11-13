@@ -438,10 +438,8 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
     int retval;
     
     if (sundials->data->options->fwd_sens) {
-        // clear data_sens
-        for (int i = 0; i < data_len; i++) {
-            sundials->model->data_sens[i] = 0;
-        }
+        N_VConst(RCONST(0.0), sundials->data->yyS);
+        N_VConst(RCONST(0.0), sundials->data->ypS);
         set_inputs_grad(inputs, dinputs, sundials->model->data, sundials->model->data_sens);
         set_u0_grad(sundials->model->data, sundials->model->data_sens, sundials->model->indices, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), N_VGetArrayPointer(sundials->data->yp), N_VGetArrayPointer(sundials->data->ypS));
     } else {
@@ -458,8 +456,15 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
 
     realtype t0 = Vector_get(times_vec, 0);
 
+    // reinit solve
     retval = IDAReInit(sundials->ida_mem, t0, sundials->data->yy, sundials->data->yp);
     if (check_retval(&retval, "IDAReInit", 1)) return(1);
+
+    // reinit sens
+    if (sundials->data->options->fwd_sens) {
+        retval = IDASensReInit(sundials->ida_mem, IDA_SIMULTANEOUS, sundials->data->yyS, sundials->data->ypS);
+        if (check_retval(&retval, "IDASensReInit", 1)) return(1);
+    }
 
     retval = IDACalcIC(sundials->ida_mem, IDA_YA_YDP_INIT, Vector_get(times_vec, 1));
     if (check_retval(&retval, "IDACalcIC", 1)) return(1);
