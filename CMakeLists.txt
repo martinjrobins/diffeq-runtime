@@ -13,13 +13,10 @@ else()
     add_compile_options(-Wall -pedantic)
 endif()
 
+set(LIBRARY_NAME ${PROJECT_NAME}_lib)
+set(RUNTIME_NAME ${PROJECT_NAME})
 if (DEFINED EMSCRIPTEN)
-  set(LIBRARY_NAME ${PROJECT_NAME}_lib_wasm)
-  set(RUNTIME_NAME ${PROJECT_NAME}_wasm)
   add_compile_definitions(EMSCRIPTEN)
-else()
-  set(LIBRARY_NAME ${PROJECT_NAME}_lib)
-  set(RUNTIME_NAME ${PROJECT_NAME})
 endif()
 
 set(TEST_FILES tests/tests.c)
@@ -49,11 +46,6 @@ endif()
 enable_testing()
 
 ## logistic growth test
-if (DEFINED EMSCRIPTEN)
-  set(LOGISTIC_GROWTH_OBJ_FILE ${CMAKE_SOURCE_DIR}/tests/logistic_growth_wasm.o)
-else()
-  set(LOGISTIC_GROWTH_OBJ_FILE ${CMAKE_SOURCE_DIR}/tests/logistic_growth.o)
-endif()
 add_library(logistic_growth OBJECT ${LOGISTIC_GROWTH_FILES})
 add_executable(logistic_growth_test)
 set_property(TARGET logistic_growth_test PROPERTY LINKER_LANGUAGE C)
@@ -82,11 +74,10 @@ if(NOT sundials_POPULATED)
 endif()
 
 set(Sundials_TARGETS 
-    sundials_idas_static
-    sundials_sunlinsolklu_static
-    sundials_sunmatrixsparse_static
+    sundials_idas
+    sundials_sunlinsolklu
+    sundials_sunmatrixsparse
 )
-
 target_link_libraries(${LIBRARY_NAME} PUBLIC ${Sundials_TARGETS})
 
 if (NOT DEFINED EMSCRIPTEN)
@@ -121,8 +112,10 @@ target_include_directories(${RUNTIME_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/argp
 if (DEFINED EMSCRIPTEN)
   set(prefix ${CMAKE_STATIC_LIBRARY_PREFIX})
   set(suffix ${CMAKE_STATIC_LIBRARY_SUFFIX})
-  install(FILES $<TARGET_FILE:sundials_idas_static> RENAME ${prefix}sundials_idas_wasm${suffix} DESTINATION lib )
-  install(FILES $<TARGET_FILE:argparse> RENAME ${prefix}argparse_wasm${suffix} DESTINATION lib )
+  foreach (target ${Sundials_TARGETS})
+    install(FILES $<TARGET_FILE:${target}> DESTINATION lib )
+  endforeach ()
+  install(FILES $<TARGET_FILE:argparse> DESTINATION lib )
 endif()
 
 # Install library
