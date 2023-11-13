@@ -438,6 +438,10 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
     int retval;
     
     if (sundials->data->options->fwd_sens) {
+        // clear data_sens
+        for (int i = 0; i < data_len; i++) {
+            sundials->model->data_sens[i] = 0;
+        }
         set_inputs_grad(inputs, dinputs, sundials->model->data, sundials->model->data_sens);
         set_u0_grad(sundials->model->data, sundials->model->data_sens, sundials->model->indices, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), N_VGetArrayPointer(sundials->data->yp), N_VGetArrayPointer(sundials->data->ypS));
     } else {
