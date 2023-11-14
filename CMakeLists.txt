@@ -15,11 +15,13 @@ endif()
 
 set(LIBRARY_NAME ${PROJECT_NAME}_lib)
 set(RUNTIME_NAME ${PROJECT_NAME})
+set(TEST_NAME ${PROJECT_NAME}_test)
 if (DEFINED EMSCRIPTEN)
   add_compile_definitions(EMSCRIPTEN)
 endif()
 
-set(TEST_FILES tests/tests.c)
+set(TEST_FILES tests/test_logistic.c)
+add_definitions(-DUNITY_INCLUDE_DOUBLE)
 set(SOURCE_FILES src/diffeq.c)
 set(HEADER_FILES src/diffeq.h)
 set(MAIN_FILE src/main.c)
@@ -34,7 +36,7 @@ target_include_directories(${LIBRARY_NAME} PUBLIC src)
 ## c runtime
 add_library(${RUNTIME_NAME} STATIC ${MAIN_FILE})
 set_property(TARGET ${RUNTIME_NAME} PROPERTY C_STANDARD ${C_STANDARD})
-target_link_libraries(${RUNTIME_NAME} PRIVATE ${LIBRARY_NAME})
+target_link_libraries(${RUNTIME_NAME} PUBLIC ${LIBRARY_NAME})
 
 if (DEFINED EMSCRIPTEN)
 	set_target_properties(${LIBRARY_NAME} PROPERTIES COMPILE_FLAGS "-Os -s WASM=1 ")
@@ -45,14 +47,19 @@ endif()
 
 enable_testing()
 
-## logistic growth test
+## logistic growth executable test
 add_library(logistic_growth OBJECT ${LOGISTIC_GROWTH_FILES})
+target_link_libraries(logistic_growth PRIVATE ${LIBRARY_NAME})
 add_executable(logistic_growth_test)
 set_property(TARGET logistic_growth_test PROPERTY LINKER_LANGUAGE C)
 target_link_libraries(logistic_growth_test PRIVATE ${RUNTIME_NAME} logistic_growth)
 
 add_test(NAME logistic_growth_fixed_times_test COMMAND ${CMAKE_SOURCE_DIR}/tests/logistic_growth_fixed_times_test.sh )
 add_test(NAME logistic_growth_solver_times_test COMMAND ${CMAKE_SOURCE_DIR}/tests/logistic_growth_solver_times_test.sh )
+
+# Unity tests
+add_executable(${TEST_NAME} ${TEST_FILES})
+add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 
 # Add Sundials
 include(FetchContent)
@@ -107,6 +114,24 @@ endif()
 set(Argparse_TARGETS argparse)
 target_link_libraries(${RUNTIME_NAME} PRIVATE ${Argparse_TARGETS})
 target_include_directories(${RUNTIME_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/argparse-src")
+
+# Add Unity 
+FetchContent_Declare(
+  unity
+  GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity.git
+  GIT_TAG        v2.6.0_RC1
+)
+
+FetchContent_GetProperties(unity)
+if(NOT unity_POPULATED)
+  FetchContent_Populate(unity)
+  add_subdirectory(${unity_SOURCE_DIR} ${unity_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+set(Unity_TARGETS unity)
+target_link_libraries(${TEST_NAME} PRIVATE ${Unity_TARGETS} ${LIBRARY_NAME} ${Sundials_TARGETS})
+target_include_directories(${TEST_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/unity-src")
+
 
 # Install third-party libs if wasm
 if (DEFINED EMSCRIPTEN)

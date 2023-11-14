@@ -1,4 +1,4 @@
-typedef double realtype;
+#include "diffeq.h"
 
 //in = [r, k]
 //r { 1 }
@@ -73,12 +73,18 @@ void residual_grad(const realtype t, const realtype* u, const realtype* du, cons
 void set_u0(realtype* data, const int* indices, realtype* u, realtype* up) {
     Y = 1;
     Z = 0;
+    DYDT = 0;
+    DZDT = 0;
 }
 void set_u0_grad(realtype* data, realtype* ddata, const int* indices, realtype* u, realtype* du, realtype* up, realtype* dup) {
     Y = 1;
     Z = 0;
+    DYDT = 0;
+    DZDT = 0;
     DY = 0;
     DZ = 0;
+    DDYDT = 0;
+    DDZDT = 0;
 }
 
 void calc_out(const realtype t, const realtype* u, const realtype* up, realtype* data, const int* indices) {

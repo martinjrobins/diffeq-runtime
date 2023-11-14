@@ -438,8 +438,6 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
     int retval;
     
     if (sundials->data->options->fwd_sens) {
-        N_VConst(RCONST(0.0), sundials->data->yyS);
-        N_VConst(RCONST(0.0), sundials->data->ypS);
         set_inputs_grad(inputs, dinputs, sundials->model->data, sundials->model->data_sens);
         set_u0_grad(sundials->model->data, sundials->model->data_sens, sundials->model->indices, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), N_VGetArrayPointer(sundials->data->yp), N_VGetArrayPointer(sundials->data->ypS));
     } else {
@@ -462,7 +460,7 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
 
     // reinit sens
     if (sundials->data->options->fwd_sens) {
-        retval = IDASensReInit(sundials->ida_mem, IDA_SIMULTANEOUS, sundials->data->yyS, sundials->data->ypS);
+        retval = IDASensReInit(sundials->ida_mem, IDA_SIMULTANEOUS, &sundials->data->yyS, &sundials->data->ypS);
         if (check_retval(&retval, "IDASensReInit", 1)) return(1);
     }
 
@@ -471,7 +469,7 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
 
     retval = IDAGetConsistentIC(sundials->ida_mem, sundials->data->yy, sundials->data->yp);
     if (check_retval(&retval, "IDAGetConsistentIC", 1)) return(1);
-            
+
     if (sundials->data->options->fwd_sens) {
         calc_out_grad(t0, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), N_VGetArrayPointer(sundials->data->yp), N_VGetArrayPointer(sundials->data->ypS), sundials->model->data, sundials->model->data_sens, sundials->model->indices);
     } else {
@@ -524,6 +522,7 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
         if (sundials->data->options->fwd_sens) {
             int retval_fwd_sens = IDAGetSens1(sundials->ida_mem, &tret, 0, sundials->data->yyS);
             if (check_retval(&retval_fwd_sens, "IDAGetSens1", 1)) return(1);
+
             calc_out_grad(tret, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), N_VGetArrayPointer(sundials->data->yp), N_VGetArrayPointer(sundials->data->ypS), sundials->model->data, sundials->model->data_sens, sundials->model->indices);
         } else {
             calc_out(tret, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yp), sundials->model->data, sundials->model->indices);

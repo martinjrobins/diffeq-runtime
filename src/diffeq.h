@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdio.h>
 
 #include <idas/idas.h>               /* prototypes for IDAS fcts., consts.  */
