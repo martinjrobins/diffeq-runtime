@@ -376,7 +376,14 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     retval = IDASetId(ida_mem, id);
     if (check_retval(&retval, "IDASetId", 1)) return(1);
 
-
+    // check if we have an no algebraic equations, then we don't have to calculate the ic
+    int calc_ic = 0;
+    for (int i = 0; i < number_of_states; i++) {
+        if (N_VGetArrayPointer(id)[i] == 0) {
+            calc_ic = 1;
+            break;
+        }
+    }
 
     // setup sundials fields
     sundials->ida_mem = ida_mem;
@@ -386,6 +393,7 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     sundials->data->ypS = ypS;
     sundials->data->avtol = avtol;
     sundials->data->id = id;
+    sundials->data->calc_ic = calc_ic;
     sundials->data->sundials_jacobian = jacobian;
     sundials->data->sundials_linear_solver = linear_solver;
     sundials->data->options = options;
@@ -464,8 +472,11 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
         if (check_retval(&retval, "IDASensReInit", 1)) return(1);
     }
 
-    retval = IDACalcIC(sundials->ida_mem, IDA_YA_YDP_INIT, Vector_get(times_vec, 1));
-    if (check_retval(&retval, "IDACalcIC", 1)) return(1);
+    if (sundials->data->calc_ic) {
+        // calculate consistent initial conditions (if we have algebraic equations
+        retval = IDACalcIC(sundials->ida_mem, IDA_YA_YDP_INIT, Vector_get(times_vec, 1));
+        if (check_retval(&retval, "IDACalcIC", 1)) return(1);
+    }
 
     retval = IDAGetConsistentIC(sundials->ida_mem, sundials->data->yy, sundials->data->yp);
     if (check_retval(&retval, "IDAGetConsistentIC", 1)) return(1);
