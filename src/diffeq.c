@@ -729,7 +729,7 @@ realtype Options_get_atol(Options *options) {
     return options->atol;
 }
 
-int Options_get_debug_mode(Options *options) {
+int Options_get_debug(Options *options) {
     return options->debug;
 }
 
