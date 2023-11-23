@@ -505,6 +505,22 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
     int i = 0;
     realtype t_next = t_final;
     while(1) {
+        // if debug output y and yp
+        if (sundials->data->options->debug) {
+            const realtype t = Vector_get(times_vec, i);
+            printf("t = %f\n", t);
+            printf("y = [");
+            for (int j = 0; j < number_of_states; j++) {
+                printf("%f ", N_VGetArrayPointer(sundials->data->yy)[j]);
+            }
+            printf("]\n");
+            printf("yp = [");
+            for (int j = 0; j < number_of_states; j++) {
+                printf("%f ", N_VGetArrayPointer(sundials->data->yp)[j]);
+            }
+            printf("]\n");
+        }
+
         // advance to next time point
         i++;
 
@@ -713,7 +729,13 @@ realtype Options_get_atol(Options *options) {
     return options->atol;
 }
 
+int Options_get_debug_mode(Options *options) {
+    return options->debug;
+}
 
+void Options_set_debug(Options *options, const int debug) {
+    options->debug = debug;
+}
 
 Vector *Vector_linspace_create(realtype start, realtype stop, int len) {
     Vector *vector = Vector_create(len);

@@ -134,6 +134,7 @@ typedef struct Options {
     enum Preconditioner preconditioner;
     enum Jacobian jacobian;
     int linsol_max_iterations;
+    int debug;
 } Options;
 
 /* Options functions */
@@ -157,6 +158,8 @@ EMSCRIPTEN_KEEPALIVE void Options_set_rtol(Options *options, const realtype rtol
 EMSCRIPTEN_KEEPALIVE realtype Options_get_rtol(Options *options);
 EMSCRIPTEN_KEEPALIVE void Options_set_linsol_max_iterations(Options *options, const int linsol_max_iterations);
 EMSCRIPTEN_KEEPALIVE int Options_get_linsol_max_iterations(Options *options);
+EMSCRIPTEN_KEEPALIVE void Options_set_debug(Options *options, const int debug);
+EMSCRIPTEN_KEEPALIVE int Options_get_debug(Options *options);
 
 EMSCRIPTEN_KEEPALIVE void Options_destroy(Options *options);
 
