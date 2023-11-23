@@ -665,6 +665,56 @@ void Options_set_fwd_sens(Options *options, const int fwd_sens) {
     options->fwd_sens = fwd_sens;
 }
 
+void Options_set_jacobian(Options *options, const int jacobian) {
+    options->jacobian = jacobian;
+}
+
+int Options_get_jacobian(Options *options) {
+    return options->jacobian;
+}
+
+void Options_set_linear_solver(Options *options, const int linear_solver) {
+    options->linear_solver = linear_solver;
+}
+
+int Options_get_linear_solver(Options *options) {
+    return options->linear_solver;
+}
+
+void Options_set_preconditioner(Options *options, const int preconditioner) {
+    options->preconditioner = preconditioner;
+}
+
+int Options_get_preconditioner(Options *options) {
+    return options->preconditioner;
+}
+
+void Options_set_linsol_max_iterations(Options *options, const int linsol_max_iterations) {
+    options->linsol_max_iterations = linsol_max_iterations;
+}
+
+int Options_get_linsol_max_iterations(Options *options) {
+    return options->linsol_max_iterations;
+}
+
+void Options_set_rtol(Options *options, const realtype rtol) {
+    options->rtol = rtol;
+}
+
+realtype Options_get_rtol(Options *options) {
+    return options->rtol;
+}
+
+void Options_set_atol(Options *options, const realtype atol) {
+    options->atol = atol;
+}
+
+realtype Options_get_atol(Options *options) {
+    return options->atol;
+}
+
+
+
 Vector *Vector_linspace_create(realtype start, realtype stop, int len) {
     Vector *vector = Vector_create(len);
     realtype step = (stop - start) / (len - 1);

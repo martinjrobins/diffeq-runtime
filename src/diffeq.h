@@ -133,7 +133,7 @@ typedef struct Options {
     enum LinearSolver linear_solver;
     enum Preconditioner preconditioner;
     enum Jacobian jacobian;
-    uint32_t linsol_max_iterations;
+    int linsol_max_iterations;
 } Options;
 
 /* Options functions */
@@ -145,6 +145,19 @@ EMSCRIPTEN_KEEPALIVE void Options_set_print_stats(Options *options, const int pr
 EMSCRIPTEN_KEEPALIVE int Options_get_print_stats(Options *options);
 EMSCRIPTEN_KEEPALIVE void Options_set_fwd_sens(Options *options, const int print_stats);
 EMSCRIPTEN_KEEPALIVE int Options_get_fwd_sens(Options *options);
+EMSCRIPTEN_KEEPALIVE int Options_get_linear_solver(Options *options);
+EMSCRIPTEN_KEEPALIVE void Options_set_linear_solver(Options *options, const int linear_solver);
+EMSCRIPTEN_KEEPALIVE int Options_get_preconditioner(Options *options);
+EMSCRIPTEN_KEEPALIVE void Options_set_preconditioner(Options *options, const int preconditioner);
+EMSCRIPTEN_KEEPALIVE int Options_get_jacobian(Options *options);
+EMSCRIPTEN_KEEPALIVE void Options_set_jacobian(Options *options, const int jacobian);
+EMSCRIPTEN_KEEPALIVE void Options_set_atol(Options *options, const realtype atol);
+EMSCRIPTEN_KEEPALIVE realtype Options_get_atol(Options *options);
+EMSCRIPTEN_KEEPALIVE void Options_set_rtol(Options *options, const realtype rtol);
+EMSCRIPTEN_KEEPALIVE realtype Options_get_rtol(Options *options);
+EMSCRIPTEN_KEEPALIVE void Options_set_linsol_max_iterations(Options *options, const int linsol_max_iterations);
+EMSCRIPTEN_KEEPALIVE int Options_get_linsol_max_iterations(Options *options);
+
 EMSCRIPTEN_KEEPALIVE void Options_destroy(Options *options);
 
 typedef struct SundialsData {
