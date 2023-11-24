@@ -168,7 +168,6 @@ typedef struct SundialsData {
     size_t number_of_inputs;
     size_t number_of_outputs;
     size_t number_of_data;
-    size_t number_of_indices;
     N_Vector yy;
     N_Vector yyS;
     N_Vector yp;
@@ -184,7 +183,6 @@ typedef struct ModelData {
   realtype* data;
   realtype* data_sens;
   realtype* data_jacobian;
-  int* indices;
 } ModelData;
 
 typedef struct Sundials {
@@ -209,19 +207,19 @@ MatrixCSC *Sundials_create_jacobian(Sundials *sundials);
 /*
 * model functions (linked in later)
 */
-void residual(const realtype t, const realtype* u, const realtype* up, realtype* data, const int* indices, realtype* rr);
-void residual_grad(const realtype t, const realtype* u, const realtype* du, const realtype* up, const realtype* dup, realtype* data, realtype* ddata, const int* indices, realtype* rr, realtype* drr);
+void residual(const realtype t, const realtype* u, const realtype* up, realtype* data, realtype* rr);
+void residual_grad(const realtype t, const realtype* u, const realtype* du, const realtype* up, const realtype* dup, realtype* data, realtype* ddata, realtype* rr, realtype* drr);
 
-void set_u0(realtype* data, const int* indices, realtype* u, realtype* up);
-void set_u0_grad(realtype* data, realtype* ddata, const int* indices, realtype* u, realtype* du, realtype* up, realtype* dup);
+void set_u0(realtype* data, realtype* u, realtype* up);
+void set_u0_grad(realtype* data, realtype* ddata, realtype* u, realtype* du, realtype* up, realtype* dup);
 
-void calc_out(const realtype t, const realtype* u, const realtype* up, realtype* data, const int* indices);
-void calc_out_grad(const realtype t, const realtype* u, const realtype* du, const realtype* up, const realtype* dup, realtype* data, realtype* ddata, const int* indices);
+void calc_out(const realtype t, const realtype* u, const realtype* up, realtype* data);
+void calc_out_grad(const realtype t, const realtype* u, const realtype* du, const realtype* up, const realtype* dup, realtype* data, realtype* ddata);
 
 void set_inputs(const realtype* inputs, realtype* data);
 void set_inputs_grad(const realtype* inputs, const realtype* dinputs, realtype* data, realtype* ddata);
 
-void get_dims(int* states, int* inputs, int* outputs, int* data, const int* indices);
+void get_dims(int* states, int* inputs, int* outputs, int* data);
 void set_id(realtype* id);
 void get_out(const realtype* data, realtype** tensor_data, int* tensor_size);
 
