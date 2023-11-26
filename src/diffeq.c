@@ -45,9 +45,11 @@ int sundials_jacobian(realtype t, realtype cj, N_Vector y, N_Vector yp, N_Vector
     const int is_dense = sundials->data->options->jacobian == DENSE_JACOBIAN;
 
     int nnz = 0;
+    int alloc_nnz = 0;
     if (!is_dense) {
         // zero matrix
         SM_INDEXPTRS_S(Jac)[0] = 0;
+        alloc_nnz = SM_NNZ_S(Jac);
     }
 
     for (int i = 0; i < sundials->data->number_of_states; i++) {
@@ -81,6 +83,11 @@ int sundials_jacobian(realtype t, realtype cj, N_Vector y, N_Vector yp, N_Vector
                     row_vals[col_nnz] = j;
                     data[col_nnz] = drr_[j];
                     col_nnz++;
+                    if (nnz + col_nnz > alloc_nnz) {
+                        alloc_nnz = 2 * (nnz + col_nnz);
+                        SM_INDEXPTRS_S(Jac) = (sunindextype *) realloc(SM_INDEXPTRS_S(Jac), alloc_nnz);
+                        SM_DATA_S(Jac) = (realtype *) realloc(SM_DATA_S(Jac), alloc_nnz);
+                    }
                 }
             }
             nnz += col_nnz;
@@ -301,8 +308,8 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     SUNMatrix jacobian;
     if (options->jacobian == SPARSE_JACOBIAN) {
         MatrixCSC *jac = Sundials_create_jacobian(sundials);
-        // assume we missed some non-zero elements
-        int nnz = 2 * jac->nnz;
+        // allocate enough for a 3-banded jacobian
+        int nnz = 3 * number_of_states;
         int matrix_size = number_of_states * number_of_states;
         if (nnz > matrix_size) {
             nnz = matrix_size;
