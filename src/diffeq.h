@@ -67,7 +67,7 @@ typedef struct Vector {
 } Vector;
 
 typedef struct VectorInt {
-  sunindextype *data;
+  int *data;
   int len;
   int capacity;
 } VectorInt;
@@ -78,12 +78,13 @@ EMSCRIPTEN_KEEPALIVE Vector *Vector_linspace_create(const realtype start, const 
 EMSCRIPTEN_KEEPALIVE Vector *Vector_create(const int len);
 EMSCRIPTEN_KEEPALIVE VectorInt *VectorInt_create(const int len);
 EMSCRIPTEN_KEEPALIVE Vector *Vector_create_and_fill(const int len, const realtype value);
+EMSCRIPTEN_KEEPALIVE VectorInt *VectorInt_create_and_fill(const int len, const int value);
 EMSCRIPTEN_KEEPALIVE realtype Vector_get(Vector *vector, const int index);
 EMSCRIPTEN_KEEPALIVE realtype *Vector_get_data(Vector *vector);
 EMSCRIPTEN_KEEPALIVE Vector *Vector_create_with_capacity(const int len, const int capacity);
 EMSCRIPTEN_KEEPALIVE VectorInt *VectorInt_create_with_capacity(const int len, const int capacity);
 EMSCRIPTEN_KEEPALIVE void Vector_push(Vector *vector, const realtype value);
-EMSCRIPTEN_KEEPALIVE void VectorInt_push(VectorInt *vector, const sunindextype value);
+EMSCRIPTEN_KEEPALIVE void VectorInt_push(VectorInt *vector, const int value);
 EMSCRIPTEN_KEEPALIVE void Vector_resize(Vector *vector, const int len);
 EMSCRIPTEN_KEEPALIVE void VectorInt_resize(VectorInt *vector, const int len);
 EMSCRIPTEN_KEEPALIVE int Vector_get_length(Vector *vector);

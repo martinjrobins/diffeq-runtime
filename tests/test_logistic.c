@@ -91,8 +91,53 @@ void test_solve_twice(void)
   TEST_ASSERT_DOUBLE_ARRAY_WITHIN(0.001, expected_doutputs, doutputs->data, noutputs * times->len);
 }
 
+void test_solve_klu(void)
+{
+  inputs->data[0] = 1;
+  inputs->data[1] = 2;
+  dinputs->data[0] = 1;
+  dinputs->data[1] = 0;
+  Vector_resize(times, 4);
+  times->data[0] = 0.0;
+  times->data[1] = 0.1;
+  times->data[2] = 0.2;
+  times->data[3] = 0.3;
+  options = Options_create();
+  options->fixed_times = 1;
+  options->fwd_sens = 1;
+  options->linear_solver = LINEAR_SOLVER_KLU;
+  options->jacobian = SPARSE_JACOBIAN;
+  retval = Sundials_init(sundials, options);
+  TEST_ASSERT_EQUAL(retval, 0);
+
+  retval = Sundials_solve(sundials, times, inputs, dinputs, outputs, doutputs);
+  TEST_ASSERT_EQUAL(retval, 0);
+
+  const realtype expected_outputs[] = {
+    1.000000,2.000000,
+    1.049955,2.099911,
+    1.099664,2.199329,
+    1.148881,2.297763
+  };
+  const realtype expected_doutputs[] = {
+    0.000000,0.000000,
+    0.049955,0.099911,
+    0.098995,0.197990,
+    0.146666,0.293331
+  };
+
+  const int noutputs = 2;
+  TEST_ASSERT_EQUAL(outputs->len, noutputs * times->len);
+  TEST_ASSERT_EQUAL(doutputs->len, noutputs * times->len);
+  TEST_ASSERT_DOUBLE_ARRAY_WITHIN(0.001, expected_outputs, outputs->data, noutputs * times->len);
+  TEST_ASSERT_DOUBLE_ARRAY_WITHIN(0.001, expected_doutputs, doutputs->data, noutputs * times->len);
+}
+
+
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_solve_twice);
+    RUN_TEST(test_solve_klu);
     return UNITY_END();
 }

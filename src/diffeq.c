@@ -3,7 +3,6 @@
 #include <math.h>
 #include <assert.h>
 
-
 int sundials_residual(realtype t, N_Vector y, N_Vector ydot, N_Vector rr, void *user_data) {
     Sundials *sundials = (Sundials *)user_data;
     realtype *yy = N_VGetArrayPointer(y);
@@ -45,18 +44,10 @@ int sundials_jacobian(realtype t, realtype cj, N_Vector y, N_Vector yp, N_Vector
     realtype *data_jacobian = sundials->model->data_jacobian;
     const int is_dense = sundials->data->options->jacobian == DENSE_JACOBIAN;
 
-    // copy colptrs and rowvals into Jac, assume sparsity pattern is fixed
+    int nnz = 0;
     if (!is_dense) {
-        sunindextype *colptrs_to = SM_INDEXPTRS_S(Jac);
-        sunindextype *rowvals_to = SM_INDEXVALS_S(Jac);
-        sunindextype *colptrs_from = SM_INDEXPTRS_S(sundials->data->sundials_jacobian);
-        sunindextype *rowvals_from = SM_INDEXVALS_S(sundials->data->sundials_jacobian);
-        for (int i = 0; i < SM_COLUMNS_S(sundials->data->sundials_jacobian) + 1; i++) {
-            colptrs_to[i] = colptrs_from[i];
-        }
-        for (int i = 0; i < SM_NNZ_S(sundials->data->sundials_jacobian); i++) {
-            rowvals_to[i] = rowvals_from[i];
-        }
+        // zero matrix
+        SM_INDEXPTRS_S(Jac)[0] = 0;
     }
 
     for (int i = 0; i < sundials->data->number_of_states; i++) {
@@ -72,6 +63,7 @@ int sundials_jacobian(realtype t, realtype cj, N_Vector y, N_Vector yp, N_Vector
         }
 
         residual_grad(t, yy_, yyS_, yp_, ypS_, data, data_jacobian, rr_, drr_);
+
         
         // copy into jacobian
         if (is_dense) {
@@ -81,14 +73,18 @@ int sundials_jacobian(realtype t, realtype cj, N_Vector y, N_Vector yp, N_Vector
                 col[j] = drr_[j];
             }
         } else {
-            // must be csc sparse, just copy non-zero elements
-            sunindextype row_start = SM_INDEXPTRS_S(sundials->data->sundials_jacobian)[i];
-            sunindextype row_end = SM_INDEXPTRS_S(sundials->data->sundials_jacobian)[i + 1];
-            for (int j = row_start; j < row_end; j++) {
-                sunindextype row = SM_INDEXVALS_S(sundials->data->sundials_jacobian)[j];
-                SM_DATA_S(Jac)[j] = drr_[row];
+            sunindextype* row_vals = SM_INDEXVALS_S(Jac) + nnz;
+            realtype *data = SM_DATA_S(Jac) + nnz;
+            int col_nnz = 0;
+            for (int j = 0; j < sundials->data->number_of_states; j++) {
+                if (drr_[j] != 0) {
+                    row_vals[col_nnz] = j;
+                    data[col_nnz] = drr_[j];
+                    col_nnz++;
+                }
             }
-
+            nnz += col_nnz;
+            SM_INDEXPTRS_S(Jac)[i + 1] = nnz;
         }
     }
     return(0);
@@ -147,7 +143,7 @@ int check_retval(void *returnvalue, const char *funcname, int opt)
 }
 
 // random number between epsilon and 1
-realtype my_rand() {
+realtype my_rand(void) {
     return (realtype)rand() / (realtype)((unsigned)RAND_MAX + 1) + FLT_EPSILON;
 }
 
@@ -159,7 +155,7 @@ MatrixCSC *MatrixCSC_create(int nrows, int ncols) {
     int capacity = ncols;
     matrix->nnz = nnz;
     matrix->row_indices = VectorInt_create_with_capacity(nnz, capacity);
-    matrix->col_ptrs = VectorInt_create(ncols + 1);
+    matrix->col_ptrs = VectorInt_create_and_fill(ncols + 1, 0);
     matrix->data = Vector_create_with_capacity(nnz, capacity);
     return matrix;
 }
@@ -225,9 +221,7 @@ MatrixCSC *Sundials_create_jacobian(Sundials *sundials) {
         residual_grad(my_rand(), yy->data, yyS->data, yp->data, ypS->data, data, data_jacobian, rr->data, drr->data);
         MatrixCSC_add_col(jacobian, drr);
     }
-    return(0);
-
-
+    return(jacobian);
 }
 
 int Sundials_init(Sundials *sundials, const Options *options) {
@@ -307,15 +301,13 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     SUNMatrix jacobian;
     if (options->jacobian == SPARSE_JACOBIAN) {
         MatrixCSC *jac = Sundials_create_jacobian(sundials);
-        jacobian = SUNSparseMatrix(number_of_states, number_of_states, jac->nnz, CSC_MAT, sundials->sunctx);
-        //copy jacobian into jacobian matrix
-        for (int i = 0; i < jac->col_ptrs->len; i++) {
-            SM_INDEXPTRS_S(jacobian)[i] = jac->col_ptrs->data[i];
+        // assume we missed some non-zero elements
+        int nnz = 2 * jac->nnz;
+        int matrix_size = number_of_states * number_of_states;
+        if (nnz > matrix_size) {
+            nnz = matrix_size;
         }
-        for (int i = 0; i < jac->nnz; i++) {
-            SM_DATA_S(jacobian)[i] = jac->data->data[i];
-            SM_INDEXVALS_S(jacobian)[i] = jac->row_indices->data[i];
-        }
+        jacobian = SUNSparseMatrix(number_of_states, number_of_states, nnz, CSC_MAT, sundials->sunctx);
         MatrixCSC_destroy(jac);
     }
     else if (options->jacobian == DENSE_JACOBIAN || options->jacobian == NO_JACOBIAN) {
@@ -356,7 +348,10 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     }
     else if (options->linear_solver == LINEAR_SOLVER_SPTFQMR) {
        linear_solver = SUNLinSol_SPTFQMR(yy, precon_type, options->linsol_max_iterations, sundials->sunctx);
-    };
+    } else {
+        printf("unknown linear solver %d", options->linear_solver);
+        return(1);
+    }
 
     retval = IDASetLinearSolver(ida_mem, linear_solver, jacobian);
     if (check_retval(&retval, "IDASetLinearSolver", 1)) return(1);
@@ -606,7 +601,7 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
     return(0);
 }
 
-Sundials *Sundials_create() {
+Sundials *Sundials_create(void) {
     Sundials *sundials = malloc(sizeof(Sundials));
     sundials->data = malloc(sizeof(SundialsData));
     sundials->model = malloc(sizeof(ModelData));
@@ -649,7 +644,7 @@ void Sundials_destroy(Sundials *sundials) {
     free(sundials);
 }
 
-Options *Options_create() {
+Options *Options_create(void) {
     Options *options = malloc(sizeof(Options));
     options->print_stats = 0;
     options->fixed_times = 0;
@@ -814,6 +809,14 @@ Vector *Vector_create_and_fill(int len, realtype value) {
     return vector;
 }
 
+VectorInt *VectorInt_create_and_fill(int len, int value) {
+    VectorInt *vector = VectorInt_create(len);
+    for (int i = 0; i < len; i++) {
+        vector->data[i] = value;
+    }
+    return vector;
+}
+
 VectorInt *VectorInt_create_with_capacity(int len, int capacity) {
     if (capacity < len) {
         capacity = len;
@@ -822,7 +825,7 @@ VectorInt *VectorInt_create_with_capacity(int len, int capacity) {
         capacity = 1;
     }
     VectorInt *vector = malloc(sizeof(VectorInt));
-    vector->data = (sunindextype *)malloc(capacity * sizeof(sunindextype));
+    vector->data = (int *)malloc(capacity * sizeof(int));
     vector->len = len;
     vector->capacity = capacity;
     return vector;
@@ -837,10 +840,10 @@ void VectorInt_destroy(VectorInt *vector) {
     free(vector);
 }
 
-void VectorInt_push(VectorInt *vector, sunindextype value) {
+void VectorInt_push(VectorInt *vector, int value) {
     if (vector->len == vector->capacity) {
         vector->capacity *= 2;
-        vector->data = realloc(vector->data, vector->capacity * sizeof(sunindextype));
+        vector->data = realloc(vector->data, vector->capacity * sizeof(int));
     }
     vector->data[vector->len++] = value;
 }
@@ -848,7 +851,7 @@ void VectorInt_push(VectorInt *vector, sunindextype value) {
 void VectorInt_resize(VectorInt *vector, int len) {
     if (len > vector->capacity) {
         vector->capacity = len;
-        vector->data = realloc(vector->data, vector->capacity * sizeof(sunindextype));
+        vector->data = realloc(vector->data, vector->capacity * sizeof(int));
     }
     vector->len = len;
 }
