@@ -273,6 +273,9 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     N_Vector id = N_VNew_Serial(number_of_states, sundials->sunctx);
     if (check_retval((void *)id, "N_VNew_Serial", 0)) return(1);
 
+    N_Vector tmp = N_VNew_Serial(number_of_states, sundials->sunctx);
+    if (check_retval((void *)tmp, "N_VNew_Serial", 0)) return(1);
+
     N_Vector yyS = NULL;
     N_Vector ypS =  NULL;
     if (options->fwd_sens) {
@@ -397,6 +400,7 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     sundials->data->yp = yp;
     sundials->data->yyS = yyS;
     sundials->data->ypS = ypS;
+    sundials->data->tmp = tmp;
     sundials->data->avtol = avtol;
     sundials->data->id = id;
     sundials->data->sundials_jacobian = jacobian;
@@ -541,10 +545,22 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
             t_next = Vector_get(times_vec, i);
         }
 
+        // keep track of number of residual evaluations so we know if we need to call residual
+        // before calculating output
+        long int nrevals_before, nrevals_after;
+        IDAGetNumResEvals(sundials->ida_mem, &nrevals_before);
+
         // solve up to next/final time point
         realtype tret;
         retval = IDASolve(sundials->ida_mem, t_next, &tret, sundials->data->yy, sundials->data->yp, itask);
         if (check_retval(&retval, "IDASolve", 1)) return(1);
+
+        IDAGetNumResEvals(sundials->ida_mem, &nrevals_after);
+        if (nrevals_after == nrevals_before) {
+            // if no residual evaluations were performed we need to call residual manually
+            // to get the correct output
+            residual(tret, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yp), sundials->model->data, N_VGetArrayPointer(sundials->data->tmp));
+        }
 
         // if debug output y and yp
         if (sundials->data->options->debug) {
@@ -653,6 +669,7 @@ void Sundials_destroy(Sundials *sundials) {
     SUNMatDestroy(sundials->data->sundials_jacobian);
     N_VDestroy(sundials->data->yy);
     N_VDestroy(sundials->data->yp);
+    N_VDestroy(sundials->data->tmp);
     N_VDestroy(sundials->data->avtol);
     N_VDestroy(sundials->data->id);
     IDAFree(&(sundials->ida_mem));

@@ -173,6 +173,7 @@ typedef struct SundialsData {
     N_Vector yyS;
     N_Vector yp;
     N_Vector ypS;
+    N_Vector tmp;
     N_Vector avtol;
     N_Vector id;
     SUNMatrix sundials_jacobian;
