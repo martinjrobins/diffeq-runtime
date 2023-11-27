@@ -545,22 +545,14 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
             t_next = Vector_get(times_vec, i);
         }
 
-        // keep track of number of residual evaluations so we know if we need to call residual
-        // before calculating output
-        long int nrevals_before, nrevals_after;
-        IDAGetNumResEvals(sundials->ida_mem, &nrevals_before);
-
         // solve up to next/final time point
         realtype tret;
         retval = IDASolve(sundials->ida_mem, t_next, &tret, sundials->data->yy, sundials->data->yp, itask);
         if (check_retval(&retval, "IDASolve", 1)) return(1);
 
-        IDAGetNumResEvals(sundials->ida_mem, &nrevals_after);
-        if (nrevals_after == nrevals_before) {
-            // if no residual evaluations were performed we need to call residual manually
-            // to get the correct output
-            residual(tret, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yp), sundials->model->data, N_VGetArrayPointer(sundials->data->tmp));
-        }
+        // if no residual evaluations were performed, or if the last one was not at the returned solution we need to call residual manually
+        // to get the correct output
+        residual(tret, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yp), sundials->model->data, N_VGetArrayPointer(sundials->data->tmp));
 
         // if debug output y and yp
         if (sundials->data->options->debug) {
