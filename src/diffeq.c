@@ -551,7 +551,7 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
 
         // get output (calculated into output and doutput array)
         if (fwd_sens) {
-            int retval_fwd_sens = IDAGetSens1(sundials->ida_mem, &tret, 0, sundials->data->yyS);
+            int retval_fwd_sens = IDAGetSensDky1(sundials->ida_mem, tret, 0, 0, sundials->data->yyS);
             if (check_retval(&retval_fwd_sens, "IDAGetSens1", 1)) return(1);
 
             calc_out_grad(tret, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), N_VGetArrayPointer(sundials->data->yp), N_VGetArrayPointer(sundials->data->ypS), sundials->model->data, sundials->model->data_sens);
