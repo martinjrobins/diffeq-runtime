@@ -485,6 +485,20 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
     retval = IDAGetConsistentIC(sundials->ida_mem, sundials->data->yy, sundials->data->yp);
     if (check_retval(&retval, "IDAGetConsistentIC", 1)) return(1);
 
+    // if debug output y and yp
+    if (sundials->data->options->debug) {
+        printf("y0 = [");
+        for (int j = 0; j < number_of_states; j++) {
+            printf("%f ", N_VGetArrayPointer(sundials->data->yy)[j]);
+        }
+        printf("]\n");
+        printf("yp0 = [");
+        for (int j = 0; j < number_of_states; j++) {
+            printf("%f ", N_VGetArrayPointer(sundials->data->yp)[j]);
+        }
+        printf("]\n");
+    }
+
     if (fwd_sens) {
         calc_out_grad(t0, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), N_VGetArrayPointer(sundials->data->yp), N_VGetArrayPointer(sundials->data->ypS), sundials->model->data, sundials->model->data_sens);
     } else {
@@ -520,22 +534,6 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
     int i = 0;
     realtype t_next = t_final;
     while(1) {
-        // if debug output y and yp
-        if (sundials->data->options->debug) {
-            const realtype t = Vector_get(times_vec, i);
-            printf("t = %f\n", t);
-            printf("y = [");
-            for (int j = 0; j < number_of_states; j++) {
-                printf("%f ", N_VGetArrayPointer(sundials->data->yy)[j]);
-            }
-            printf("]\n");
-            printf("yp = [");
-            for (int j = 0; j < number_of_states; j++) {
-                printf("%f ", N_VGetArrayPointer(sundials->data->yp)[j]);
-            }
-            printf("]\n");
-        }
-
         // advance to next time point
         i++;
 
@@ -548,6 +546,21 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
         realtype tret;
         retval = IDASolve(sundials->ida_mem, t_next, &tret, sundials->data->yy, sundials->data->yp, itask);
         if (check_retval(&retval, "IDASolve", 1)) return(1);
+
+        // if debug output y and yp
+        if (sundials->data->options->debug) {
+            printf("tret = %f\n", tret);
+            printf("y = [");
+            for (int j = 0; j < number_of_states; j++) {
+                printf("%f ", N_VGetArrayPointer(sundials->data->yy)[j]);
+            }
+            printf("]\n");
+            printf("yp = [");
+            for (int j = 0; j < number_of_states; j++) {
+                printf("%f ", N_VGetArrayPointer(sundials->data->yp)[j]);
+            }
+            printf("]\n");
+        }
 
         // get output (calculated into output and doutput array)
         if (fwd_sens) {
