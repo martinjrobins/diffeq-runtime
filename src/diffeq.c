@@ -528,10 +528,9 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
         Vector_resize(times_vec, 1);
     }
 
-    // set stop time as final time point
-    retval = IDASetStopTime(sundials->ida_mem, t_final);
-    if (check_retval(&retval, "IDASetStopTime", 1)) return(1);
     int i = 0;
+
+    // if not using fixed times we need to request the final time point
     realtype t_next = t_final;
     while(1) {
         // advance to next time point
