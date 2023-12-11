@@ -99,6 +99,10 @@ void calc_out_grad(const realtype t, const realtype* u, const realtype* du, cons
     DOUT_1 = DZ;
 }
 
+void calc_stop(const realtype t, const realtype* u, const realtype* up, realtype* data, realtype* stop) {
+    stop[0] = Y - 1.2;
+}
+
 void set_inputs(const realtype* inputs, realtype* data) {
     R = inputs[0];
     K = inputs[1];
@@ -110,11 +114,12 @@ void set_inputs_grad(const realtype* inputs, const realtype* dinputs, realtype* 
     DK = dinputs[1];
 }
 
-void get_dims(int* states, int* inputs, int* outputs, int* data) {
+void get_dims(int* states, int* inputs, int* outputs, int* data, int* stop) {
     *states = 2;
     *inputs = 2;
     *outputs = 2;
     *data = 8;
+    *stop = 1;
 }
 void set_id(realtype* id) {
     id[0] = 1;

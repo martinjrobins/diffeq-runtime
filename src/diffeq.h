@@ -90,6 +90,9 @@ EMSCRIPTEN_KEEPALIVE void VectorInt_resize(VectorInt *vector, const int len);
 EMSCRIPTEN_KEEPALIVE int Vector_get_length(Vector *vector);
 void Vector_printf(Vector *vector);
 
+#define VECTOR_GET(vector, index) vector->data[index]
+#define VECTOR_LEN(vector) vector->len
+
 typedef struct MatrixCSC {
   Vector *data;
   VectorInt *row_indices;
@@ -167,6 +170,7 @@ EMSCRIPTEN_KEEPALIVE void Options_destroy(Options *options);
 typedef struct SundialsData {
     size_t number_of_states;
     size_t number_of_inputs;
+    size_t number_of_stop;
     size_t number_of_outputs;
     size_t number_of_data;
     N_Vector yy;
@@ -218,10 +222,12 @@ void set_u0_grad(realtype* data, realtype* ddata, realtype* u, realtype* du, rea
 void calc_out(const realtype t, const realtype* u, const realtype* up, realtype* data);
 void calc_out_grad(const realtype t, const realtype* u, const realtype* du, const realtype* up, const realtype* dup, realtype* data, realtype* ddata);
 
+void calc_stop(const realtype t, const realtype* u, const realtype* up, realtype* data, realtype* stop);
+
 void set_inputs(const realtype* inputs, realtype* data);
 void set_inputs_grad(const realtype* inputs, const realtype* dinputs, realtype* data, realtype* ddata);
 
-void get_dims(int* states, int* inputs, int* outputs, int* data);
+void get_dims(int* states, int* inputs, int* outputs, int* data, int* stop);
 void set_id(realtype* id);
 void get_out(const realtype* data, realtype** tensor_data, int* tensor_size);
 

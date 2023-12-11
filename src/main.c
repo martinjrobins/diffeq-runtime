@@ -53,8 +53,9 @@ int main(int argc, const char *argv[]) {
     int number_of_inputs = 0;
     int number_of_outputs = 0;
     int number_of_states = 0;
+    int number_of_stop = 0;
     int data_len = 0;
-    get_dims(&number_of_inputs, &number_of_outputs, &number_of_states, &data_len);
+    get_dims(&number_of_inputs, &number_of_outputs, &number_of_states, &data_len, &number_of_stop);
 
     /* read in input */
     if (inputs_str == NULL) {

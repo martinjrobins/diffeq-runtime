@@ -13,6 +13,15 @@ int sundials_residual(realtype t, N_Vector y, N_Vector ydot, N_Vector rr, void *
     return(0);
 }
 
+int sundials_root(realtype t, N_Vector y, N_Vector ydot, realtype *gout, void *user_data) {
+    Sundials *sundials = (Sundials *)user_data;
+    realtype *yy = N_VGetArrayPointer(y);
+    realtype *yp = N_VGetArrayPointer(ydot);
+    realtype *data = sundials->model->data;
+    calc_stop(t, yy, yp, data, gout);
+    return(0);
+}
+
 int sundials_jtime(realtype tt, N_Vector yy, N_Vector yp, N_Vector rr, N_Vector v, N_Vector Jv, realtype cj, void *user_data, N_Vector tmp1, N_Vector tmp2) {
     Sundials *sundials = (Sundials *)user_data;
     realtype *yy_ = N_VGetArrayPointer(yy);
@@ -236,12 +245,14 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     int number_of_outputs = 0;
     int number_of_states = 0;
     int data_len = 0;
-    get_dims(&number_of_states, &number_of_inputs, &number_of_outputs, &data_len);
+    int number_of_stop = 0;
+    get_dims(&number_of_states, &number_of_inputs, &number_of_outputs, &data_len, &number_of_stop);
     
     if (options->debug) {
         printf("number_of_states = %d\n", number_of_states);
         printf("number_of_inputs = %d\n", number_of_inputs);
         printf("number_of_outputs = %d\n", number_of_outputs);
+        printf("number_of_stop = %d\n", number_of_stop);
         printf("data_len = %d\n", data_len);
         
         printf("options.print_stats = %d\n", options->print_stats);
@@ -298,14 +309,15 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     retval = IDASVtolerances(ida_mem, options->rtol, avtol);
     if (check_retval(&retval, "IDASVtolerances", 1)) return(1);
 
-
     // set user data
     retval = IDASetUserData(ida_mem, (void *)sundials);
     if (check_retval(&retval, "IDASetUserData", 1)) return(1);
 
     // set events
-    //IDARootInit(ida_mem, number_of_events, events_casadi);
-
+    if (number_of_stop > 0) {
+        retval = IDARootInit(ida_mem, number_of_stop, sundials_root);
+        if (check_retval(&retval, "IDARootInit", 1)) return(1);
+    }
 
     // set matrix
     SUNMatrix jacobian;
@@ -438,8 +450,9 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
     int number_of_inputs = 0;
     int number_of_outputs = 0;
     int number_of_states = 0;
+    int number_of_stop = 0;
     int data_len = 0;
-    get_dims(&number_of_states, &number_of_inputs, &number_of_outputs, &data_len);
+    get_dims(&number_of_states, &number_of_inputs, &number_of_outputs, &data_len, &number_of_stop);
     
     const int fwd_sens = sundials->data->options->fwd_sens && number_of_inputs > 0;
     
@@ -637,12 +650,14 @@ Sundials *Sundials_create(void) {
     int number_of_outputs = 0;
     int number_of_states = 0;
     int number_of_data = 0;
-    get_dims(&number_of_states, &number_of_inputs, &number_of_outputs, &number_of_data);
+    int number_of_stop = 0;
+    get_dims(&number_of_states, &number_of_inputs, &number_of_outputs, &number_of_data, &number_of_stop);
     
     sundials->data->number_of_inputs = number_of_inputs;
     sundials->data->number_of_outputs = number_of_outputs;
     sundials->data->number_of_states = number_of_states;
     sundials->data->number_of_data = number_of_data;
+    sundials->data->number_of_stop = number_of_stop;
 
     sundials->model->data = malloc(number_of_data * sizeof(realtype));
     sundials->model->data_jacobian = malloc(number_of_data * sizeof(realtype));
