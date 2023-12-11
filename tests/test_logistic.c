@@ -153,7 +153,7 @@ void test_stop(void)
   const int noutputs = 2;
   const int ntimes = VECTOR_LEN(times);
   TEST_ASSERT_LESS_THAN(1.0, VECTOR_GET(times, ntimes - 1));
-  TEST_ASSERT_EQUAL(VECTOR_GET(outputs, noutputs * (ntimes - 1) ), 1.2);
+  TEST_ASSERT_EQUAL(1.2, VECTOR_GET(outputs, noutputs * (ntimes - 1) ));
 }
 
 int main(void) {
