@@ -534,11 +534,13 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
         }
     }
 
+    realtype t_final = Vector_get(times_vec, times_vec->len - 1);
     int itask = IDA_ONE_STEP;
     if (sundials->data->options->fixed_times) {
         itask = IDA_NORMAL;
+    } else {
+        retval = IDASetStopTime(sundials->ida_mem, t_final);
     }
-    realtype t_final = Vector_get(times_vec, times_vec->len - 1);
 
     if (!sundials->data->options->fixed_times) {
         // if using solver times save initial time point and get rid of the rest
