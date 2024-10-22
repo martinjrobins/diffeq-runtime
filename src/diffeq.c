@@ -265,6 +265,7 @@ int Sundials_init(Sundials *sundials, const Options *options) {
         printf("options.atol = %f\n", options->atol);
         printf("options.debug = %d\n", options->debug);
         printf("options.fwd_sens = %d\n", options->fwd_sens);
+        printf("options.mxsteps = %d\n", options->mxsteps);
     }
 
     int retval;
@@ -404,6 +405,10 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     set_id(N_VGetArrayPointer(id));
     retval = IDASetId(ida_mem, id);
     if (check_retval(&retval, "IDASetId", 1)) return(1);
+    
+    // Set max number of steps
+    retval = IDASetMaxNumSteps(ida_mem, options->mxsteps);
+    if (check_retval(&retval, "IDASetMaxNumSteps", 1)) return(1);
 
 
     // setup sundials fields
@@ -699,6 +704,7 @@ Options *Options_create(void) {
     options->linsol_max_iterations = 0;
     options->rtol = 1e-6;
     options->atol = 1e-6;
+    options->mxsteps = 500;
     return options;
 }
 
@@ -712,6 +718,10 @@ void Options_set_print_stats(Options *options, const int print_stats) {
 
 void Options_set_fixed_times(Options *options, const int fixed_times) {
     options->fixed_times = fixed_times;
+}
+
+void Options_set_mxsteps(Options *options, const int mxsteps) {
+    options->mxsteps = mxsteps;
 }
 
 int Options_get_fixed_times(Options *options) {

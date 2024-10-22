@@ -33,6 +33,7 @@ cd build
 git clone https://github.com/OpenMathLib/OpenBLAS.git
 cd OpenBLAS
 git checkout v0.3.24
+emmake make libs shared CC=emcc HOSTCC=gcc TARGET=RISCV64_GENERIC NOFORTRAN=1 C_LAPACK=1 USE_THREAD=0 NO_SHARED=1 PREFIX=${EMSDK}/upstream/emscripten/cache/sysroot 
 emmake make install libs shared CC=emcc HOSTCC=gcc TARGET=RISCV64_GENERIC NOFORTRAN=1 C_LAPACK=1 USE_THREAD=0 NO_SHARED=1 PREFIX=${EMSDK}/upstream/emscripten/cache/sysroot 
 ```
 
@@ -50,11 +51,13 @@ make
 make install
 ~~~
 
+Note: for emscripten use `emcmake cmake ...`
+
 
 ### Configure project
 
 ~~~bash
-cmake -DKLU_LIBRARY_DIR=${EMSDK}/upstream/emscripten/cache/sysroot/lib -DBUILD_SHARED_LIBS=OFF -DENABLE_KLU=ON -DTARGET=generic -DNOFORTRAN=1 -DNO_LAPACK=1 -DUSE_THREAD=0 -DSUNDIALS_INDEX_SIZE=32 ..
+cmake -DKLU_LIBRARY_DIR=${EMSDK}/upstream/emscripten/cache/sysroot/lib -DKLU_INCLUDE_DIR=${EMSDK}/upstream/emscripten/cache/sysroot/include -DBUILD_SHARED_LIBS=OFF -DENABLE_KLU=ON -DTARGET=generic -DNOFORTRAN=1 -DNO_LAPACK=1 -DUSE_THREAD=0 -DSUNDIALS_INDEX_SIZE=32 ..
 ~~~
 
 ### Build project
