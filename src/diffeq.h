@@ -135,6 +135,8 @@ typedef struct Options {
     int fixed_times;      // 0 for false, 1 for true
     int fwd_sens;        // 0 for false, 1 for true
     int mxsteps;
+    realtype min_step;
+    realtype max_step;
     enum LinearSolver linear_solver;
     enum Preconditioner preconditioner;
     enum Jacobian jacobian;
@@ -154,6 +156,11 @@ EMSCRIPTEN_KEEPALIVE int Options_get_fwd_sens(Options *options);
 EMSCRIPTEN_KEEPALIVE int Options_get_linear_solver(Options *options);
 EMSCRIPTEN_KEEPALIVE void Options_set_linear_solver(Options *options, const int linear_solver);
 EMSCRIPTEN_KEEPALIVE void Options_set_mxsteps(Options *options, const int mxsteps);
+EMSCRIPTEN_KEEPALIVE int Options_get_mxsteps(Options *options);
+EMSCRIPTEN_KEEPALIVE void Options_set_min_step(Options *options, const realtype min_step);
+EMSCRIPTEN_KEEPALIVE realtype Options_get_min_step(Options *options);
+EMSCRIPTEN_KEEPALIVE void Options_set_max_step(Options *options, const realtype max_step);
+EMSCRIPTEN_KEEPALIVE realtype Options_get_max_step(Options *options);
 EMSCRIPTEN_KEEPALIVE int Options_get_preconditioner(Options *options);
 EMSCRIPTEN_KEEPALIVE void Options_set_preconditioner(Options *options, const int preconditioner);
 EMSCRIPTEN_KEEPALIVE int Options_get_jacobian(Options *options);

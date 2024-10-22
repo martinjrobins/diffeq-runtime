@@ -266,6 +266,8 @@ int Sundials_init(Sundials *sundials, const Options *options) {
         printf("options.debug = %d\n", options->debug);
         printf("options.fwd_sens = %d\n", options->fwd_sens);
         printf("options.mxsteps = %d\n", options->mxsteps);
+        printf("options.min_step = %f\n", options->min_step);
+        printf("options.max_step = %f\n", options->max_step);
     }
 
     int retval;
@@ -409,7 +411,14 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     // Set max number of steps
     retval = IDASetMaxNumSteps(ida_mem, options->mxsteps);
     if (check_retval(&retval, "IDASetMaxNumSteps", 1)) return(1);
+    
+    // Set min step
+    retval = IDASetMinStep(ida_mem, options->min_step);
+    if (check_retval(&retval, "IDASetMinStep", 1)) return(1);
 
+    // Set max step
+    retval = IDASetMaxStep(ida_mem, options->max_step);
+    if (check_retval(&retval, "IDASetMaxStep", 1)) return(1);
 
     // setup sundials fields
     sundials->ida_mem = ida_mem;
@@ -705,6 +714,8 @@ Options *Options_create(void) {
     options->rtol = 1e-6;
     options->atol = 1e-6;
     options->mxsteps = 500;
+    options->min_step = 0;
+    options->max_step = FLT_MAX;
     return options;
 }
 
@@ -722,6 +733,26 @@ void Options_set_fixed_times(Options *options, const int fixed_times) {
 
 void Options_set_mxsteps(Options *options, const int mxsteps) {
     options->mxsteps = mxsteps;
+}
+
+int Options_get_mxsteps(Options *options) {
+    return options->mxsteps;
+}
+
+void Options_set_min_step(Options *options, const realtype min_step) {
+    options->min_step = min_step;
+}
+
+realtype Options_get_min_step(Options *options) {
+    return options->min_step;
+}
+
+void Options_set_max_step(Options *options, const realtype max_step) {
+    options->max_step = max_step;
+}
+
+realtype Options_get_max_step(Options *options) {
+    return options->max_step;
 }
 
 int Options_get_fixed_times(Options *options) {
