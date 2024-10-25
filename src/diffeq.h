@@ -135,6 +135,7 @@ typedef struct Options {
     int fixed_times;      // 0 for false, 1 for true
     int fwd_sens;        // 0 for false, 1 for true
     int mxsteps;
+    int mxoutsteps;
     realtype min_step;
     realtype max_step;
     enum LinearSolver linear_solver;
@@ -173,6 +174,8 @@ EMSCRIPTEN_KEEPALIVE void Options_set_linsol_max_iterations(Options *options, co
 EMSCRIPTEN_KEEPALIVE int Options_get_linsol_max_iterations(Options *options);
 EMSCRIPTEN_KEEPALIVE void Options_set_debug(Options *options, const int debug);
 EMSCRIPTEN_KEEPALIVE int Options_get_debug(Options *options);
+EMSCRIPTEN_KEEPALIVE int Options_get_max_out_steps(Options *options);
+EMSCRIPTEN_KEEPALIVE void Options_set_max_out_steps(Options *options, const int max_out_steps);
 
 EMSCRIPTEN_KEEPALIVE void Options_destroy(Options *options);
 

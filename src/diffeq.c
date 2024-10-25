@@ -597,6 +597,12 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
         // advance to next time point
         i++;
 
+        // check that we don't exceed the maximum number of output steps
+        if (sundials->data->options->mxoutsteps > 0 && i > sundials->data->options->mxoutsteps) {
+            fprintf(stderr, "Exceeded maximum number of output steps %d", sundials->data->options->mxoutsteps);
+            return(1);
+        }
+
         // if using fixed times set next time point
         if (sundials->data->options->fixed_times) {
             t_next = Vector_get(times_vec, i);
@@ -854,6 +860,14 @@ int Options_get_debug(Options *options) {
 
 void Options_set_debug(Options *options, const int debug) {
     options->debug = debug;
+}
+
+int Options_get_max_out_steps(Options *options) {
+    return options->mxoutsteps;
+}
+
+void Options_set_max_out_steps(Options *options, const int max_out_steps) {
+    options->mxoutsteps = max_out_steps;
 }
 
 Vector *Vector_linspace_create(realtype start, realtype stop, int len) {
