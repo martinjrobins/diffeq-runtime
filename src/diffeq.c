@@ -254,7 +254,6 @@ int Sundials_init(Sundials *sundials, const Options *options) {
         printf("number_of_outputs = %d\n", number_of_outputs);
         printf("number_of_stop = %d\n", number_of_stop);
         printf("data_len = %d\n", data_len);
-        printf("is_ode = %d\n", sundials->data->is_ode);
         
         printf("options.print_stats = %d\n", options->print_stats);
         printf("options.fixed_times = %d\n", options->fixed_times);
@@ -408,11 +407,19 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     realtype *id_data = N_VGetArrayPointer(id);
     set_id(id_data);
     bool is_ode = true;
+    if (options->debug)
+        printf("id_data = [");
     for (int i = 0; i < number_of_states; i++) {
+        if (options->debug)
+            printf("%f, ", id_data[i]);
         if (id_data[i] == 0.0) {
             is_ode = false;
             break;
         }
+    }
+    if (options->debug) {
+        printf("]\n");
+        printf("is_ode = %d\n", is_ode);
     }
     retval = IDASetId(ida_mem, id);
     if (check_retval(&retval, "IDASetId", 1)) return(1);
@@ -500,14 +507,23 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
         set_u0(sundials->model->data, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yp));
     }
 
+    realtype t0 = Vector_get(times_vec, 0);
+
+    if (sundials->data->is_ode) {
+        // set tmp to zero
+        N_VConst(0.0, sundials->data->tmp);
+        // assume residual is M * y' - g(t, y)
+        // so if y' = 0, then residual is -g(t, y)
+        residual(t0, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->tmp), sundials->model->data, N_VGetArrayPointer(sundials->data->yp));
+        // minus sign is because residual is -g(t, y)
+        N_VScale(-1.0, sundials->data->yp, sundials->data->yp);
+    }
 
     realtype *output;
     realtype *doutput;
     int tensor_size;
     get_out(sundials->model->data , &output, &tensor_size);
     get_out(sundials->model->data_sens, &doutput, &tensor_size);
-
-    realtype t0 = Vector_get(times_vec, 0);
 
     // reinit solve
     retval = IDAReInit(sundials->ida_mem, t0, sundials->data->yy, sundials->data->yp);
@@ -519,15 +535,7 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
         if (check_retval(&retval, "IDASensReInit", 1)) return(1);
     }
 
-    if (sundials->data->is_ode) {
-        // set tmp to zero
-        N_VConst(0.0, sundials->data->tmp);
-        // assume residual is M * y' - g(t, y)
-        // so if y' = 0, then residual is -g(t, y)
-        residual(t0, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->tmp), sundials->model->data, N_VGetArrayPointer(sundials->data->yp));
-        // minus sign is because residual is -g(t, y)
-        N_VScale(-1.0, sundials->data->yp, sundials->data->yp);
-    } else {
+    if (!sundials->data->is_ode) {
         // calculate consistent initial conditions
         retval = IDACalcIC(sundials->ida_mem, IDA_YA_YDP_INIT, Vector_get(times_vec, 1));
         if (check_retval(&retval, "IDACalcIC", 1)) return(1);

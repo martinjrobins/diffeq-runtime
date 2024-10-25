@@ -21,6 +21,7 @@ if (DEFINED EMSCRIPTEN)
 endif()
 
 set(TEST_FILES tests/test_logistic.c)
+set(TEST_FILES_ODE tests/test_logistic_ode.c)
 add_definitions(-DUNITY_INCLUDE_DOUBLE)
 set(SOURCE_FILES src/diffeq.c)
 set(HEADER_FILES src/diffeq.h)
@@ -59,7 +60,9 @@ add_test(NAME logistic_growth_solver_times_test COMMAND ${CMAKE_SOURCE_DIR}/test
 
 # Unity tests
 add_executable(${TEST_NAME} ${TEST_FILES})
+add_executable(${TEST_NAME}_ode ${TEST_FILES_ODE})
 add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+add_test(NAME ${TEST_NAME}_ode COMMAND ${TEST_NAME}_ode)
 
 # Add Sundials
 include(FetchContent)
@@ -131,6 +134,8 @@ endif()
 set(Unity_TARGETS unity)
 target_link_libraries(${TEST_NAME} PRIVATE ${Unity_TARGETS} ${LIBRARY_NAME} ${Sundials_TARGETS})
 target_include_directories(${TEST_NAME} PUBLIC "${FETCHCONTENT_BASE_DIR}/unity-src")
+target_link_libraries(${TEST_NAME}_ode PRIVATE ${Unity_TARGETS} ${LIBRARY_NAME} ${Sundials_TARGETS})
+target_include_directories(${TEST_NAME}_ode PUBLIC "${FETCHCONTENT_BASE_DIR}/unity-src")
 
 
 # Install third-party libs if wasm
