@@ -189,6 +189,7 @@ typedef struct SundialsData {
     N_Vector tmp;
     N_Vector avtol;
     N_Vector id;
+    bool is_ode;
     SUNMatrix sundials_jacobian;
     SUNLinearSolver sundials_linear_solver;
     const Options *options;

@@ -254,6 +254,7 @@ int Sundials_init(Sundials *sundials, const Options *options) {
         printf("number_of_outputs = %d\n", number_of_outputs);
         printf("number_of_stop = %d\n", number_of_stop);
         printf("data_len = %d\n", data_len);
+        printf("is_ode = %d\n", sundials->data->is_ode);
         
         printf("options.print_stats = %d\n", options->print_stats);
         printf("options.fixed_times = %d\n", options->fixed_times);
@@ -404,7 +405,15 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     retval = SUNLinSolInitialize(linear_solver);
     if (check_retval(&retval, "SUNLinSolInitialize", 1)) return(1);
 
-    set_id(N_VGetArrayPointer(id));
+    realtype *id_data = N_VGetArrayPointer(id);
+    set_id(id_data);
+    bool is_ode = true;
+    for (int i = 0; i < number_of_states; i++) {
+        if (id_data[i] == 0.0) {
+            is_ode = false;
+            break;
+        }
+    }
     retval = IDASetId(ida_mem, id);
     if (check_retval(&retval, "IDASetId", 1)) return(1);
     
@@ -432,6 +441,7 @@ int Sundials_init(Sundials *sundials, const Options *options) {
     sundials->data->sundials_jacobian = jacobian;
     sundials->data->sundials_linear_solver = linear_solver;
     sundials->data->options = options;
+    sundials->data->is_ode = is_ode;
     return(0);
 }
 
@@ -509,12 +519,22 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
         if (check_retval(&retval, "IDASensReInit", 1)) return(1);
     }
 
-    // calculate consistent initial conditions
-    retval = IDACalcIC(sundials->ida_mem, IDA_YA_YDP_INIT, Vector_get(times_vec, 1));
-    if (check_retval(&retval, "IDACalcIC", 1)) return(1);
+    if (sundials->data->is_ode) {
+        // set tmp to zero
+        N_VConst(0.0, sundials->data->tmp);
+        // assume residual is M * y' - g(t, y)
+        // so if y' = 0, then residual is -g(t, y)
+        residual(t0, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->tmp), sundials->model->data, N_VGetArrayPointer(sundials->data->yp));
+        // minus sign is because residual is -g(t, y)
+        N_VScale(-1.0, sundials->data->yp, sundials->data->yp);
+    } else {
+        // calculate consistent initial conditions
+        retval = IDACalcIC(sundials->ida_mem, IDA_YA_YDP_INIT, Vector_get(times_vec, 1));
+        if (check_retval(&retval, "IDACalcIC", 1)) return(1);
 
-    retval = IDAGetConsistentIC(sundials->ida_mem, sundials->data->yy, sundials->data->yp);
-    if (check_retval(&retval, "IDAGetConsistentIC", 1)) return(1);
+        retval = IDAGetConsistentIC(sundials->ida_mem, sundials->data->yy, sundials->data->yp);
+        if (check_retval(&retval, "IDAGetConsistentIC", 1)) return(1);
+    }
 
     // if debug output y and yp
     if (sundials->data->options->debug) {
@@ -674,6 +694,7 @@ Sundials *Sundials_create(void) {
     sundials->data->number_of_states = number_of_states;
     sundials->data->number_of_data = number_of_data;
     sundials->data->number_of_stop = number_of_stop;
+    sundials->data->is_ode = false;
 
     sundials->model->data = malloc(number_of_data * sizeof(realtype));
     sundials->model->data_jacobian = malloc(number_of_data * sizeof(realtype));
