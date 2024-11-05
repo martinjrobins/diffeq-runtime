@@ -37,39 +37,40 @@
 #define DOUT_0 ddata[4]
 
 
-void residual(const realtype t, const realtype* u, const realtype* up, realtype* data, realtype* rr) {
-    F_0 = DYDT;
-    G_0 = (R * Y) * (1 - (Y / K));
-    rr[0] = F_0 - G_0;
+void rhs(const realtype t, const realtype* u, realtype* data, realtype* rr) {
+    rr[0] = (R * Y) * (1 - (Y / K));
 }
 
-void residual_grad(const realtype t, const realtype* u, const realtype* du, const realtype* up, const realtype* dup, realtype* data, realtype* ddata, realtype* rr, realtype* drr) {
-    DF_0 = DDYDT;
-    DG_0 = (DR * Y) * (1 - (Y / K)) + (R * DY) * (1 - (Y / K)) + (R * Y) * (0 - (DY / K)) + (R * Y) * (0 + (Y * DK / (K * K)));
-    drr[0] = DF_0 - DG_0;
+void rhs_grad(const realtype t, const realtype* u, const realtype* du, realtype* data, realtype* ddata, realtype* rr, realtype* drr) {
+    drr[0] = (DR * Y) * (1 - (Y / K)) + (R * DY) * (1 - (Y / K)) + (R * Y) * (0 - (DY / K)) + (R * Y) * (0 + (Y * DK / (K * K)));
 }
 
-void set_u0(realtype* data, realtype* u, realtype* up) {
-    Y = 1;
-    DYDT = 0;
+void mass(const realtype t, const realtype* up, realtype* data, realtype* rr) {
+    rr[0] = DYDT;
 }
-void set_u0_grad(realtype* data, realtype* ddata, realtype* u, realtype* du, realtype* up, realtype* dup) {
+
+void mass_grad(const realtype t, const realtype* up, const realtype* dup, realtype* data, realtype* ddata, realtype* rr, realtype* drr) {
+    drr[0] = DDYDT;
+}
+
+void set_u0(realtype* data, realtype* u) {
     Y = 1;
-    DYDT = 0;
+}
+void set_u0_grad(realtype* data, realtype* ddata, realtype* u, realtype* du) {
+    Y = 1;
     DY = 0;
-    DDYDT = 0;
 }
 
-void calc_out(const realtype t, const realtype* u, const realtype* up, realtype* data) {
+void calc_out(const realtype t, const realtype* u, realtype* data) {
     OUT_0 = Y;
 }
 
-void calc_out_grad(const realtype t, const realtype* u, const realtype* du, const realtype* up, const realtype* dup, realtype* data, realtype* ddata) {
+void calc_out_grad(const realtype t, const realtype* u, const realtype* du, realtype* data, realtype* ddata) {
     OUT_0 = Y;
     DOUT_0 = DY;
 }
 
-void calc_stop(const realtype t, const realtype* u, const realtype* up, realtype* data, realtype* stop) {
+void calc_stop(const realtype t, const realtype* u, realtype* data, realtype* stop) {
     stop[0] = Y - 1.2;
 }
 
@@ -84,12 +85,13 @@ void set_inputs_grad(const realtype* inputs, const realtype* dinputs, realtype* 
     DK = dinputs[1];
 }
 
-void get_dims(int* states, int* inputs, int* outputs, int* data, int* stop) {
+void get_dims(int* states, int* inputs, int* outputs, int* data, int* stop, int* has_mass) {
     *states = 1;
     *inputs = 2;
     *outputs = 1;
     *data = 5;
     *stop = 1;
+    *has_mass = 0;
 }
 void set_id(realtype* id) {
     id[0] = 1;
