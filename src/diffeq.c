@@ -537,6 +537,35 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
         set_u0(sundials->model->data, N_VGetArrayPointer(sundials->data->yy));
     }
 
+    // if debug output y and yp before reinit, then run the model functions
+    // to check these are correct
+    if (sundials->data->options->debug) {
+        printf("before reinit y0 = [");
+        for (int j = 0; j < number_of_states; j++) {
+            printf("%f ", N_VGetArrayPointer(sundials->data->yy)[j]);
+        }
+        printf("]\n");
+        printf("yp0 = [");
+        for (int j = 0; j < number_of_states; j++) {
+            printf("%f ", N_VGetArrayPointer(sundials->data->yp)[j]);
+        }
+        printf("]\n");
+
+        rhs(Vector_get(times_vec, 0), N_VGetArrayPointer(sundials->data->yy), sundials->model->data, N_VGetArrayPointer(sundials->data->tmp));
+        printf("f(y0, t0) = [");
+        for (int j = 0; j < number_of_states; j++) {
+            printf("%f ", N_VGetArrayPointer(sundials->data->tmp)[j]);
+        }
+        printf("]\n");
+
+        mass(Vector_get(times_vec, 0), N_VGetArrayPointer(sundials->data->yp), sundials->model->data, N_VGetArrayPointer(sundials->data->tmp));
+        printf("M * yp0 = [");
+        for (int j = 0; j < number_of_states; j++) {
+            printf("%f ", N_VGetArrayPointer(sundials->data->tmp)[j]);
+        }
+        printf("]\n");
+    }
+
     realtype t0 = Vector_get(times_vec, 0);
 
     if (has_mass == 0) {
@@ -571,7 +600,7 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
 
     // if debug output y and yp
     if (sundials->data->options->debug) {
-        printf("y0 = [");
+        printf("after reinit y0 = [");
         for (int j = 0; j < number_of_states; j++) {
             printf("%f ", N_VGetArrayPointer(sundials->data->yy)[j]);
         }
