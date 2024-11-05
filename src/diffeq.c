@@ -34,7 +34,6 @@ int sundials_root(realtype t, N_Vector y, N_Vector ydot, realtype *gout, void *u
 int sundials_jtime(realtype tt, N_Vector yy, N_Vector yp, N_Vector rr, N_Vector v, N_Vector Jv, realtype cj, void *user_data, N_Vector tmp1, N_Vector tmp2) {
     Sundials *sundials = (Sundials *)user_data;
     realtype *yy_ = N_VGetArrayPointer(yy);
-    realtype *yp_ = N_VGetArrayPointer(yp);
     realtype *ypS_ = N_VGetArrayPointer(tmp1);
     realtype *rr_ = N_VGetArrayPointer(rr);
     realtype *v_ = N_VGetArrayPointer(v);
@@ -52,7 +51,7 @@ int sundials_jtime(realtype tt, N_Vector yy, N_Vector yp, N_Vector rr, N_Vector 
 
     rhs_grad(tt, yy_, v_, data, data_jacobian, rr_, Jv_);
     if (sundials->data->has_mass) {
-        mass_grad(tt, yp_, ypS_, data, data_jacobian, rr_, tmp2_);
+        mass(tt, ypS_, data_jacobian, tmp2_);
         N_VLinearSum(-1.0, tmp2, 1.0, Jv, Jv);
     } else {
         N_VLinearSum(-1.0, tmp1, 1.0, Jv, Jv);
@@ -64,7 +63,6 @@ int sundials_jacobian(realtype t, realtype cj, N_Vector y, N_Vector yp, N_Vector
     Sundials *sundials = (Sundials *)user_data;
     realtype *yy_ = N_VGetArrayPointer(y);
     realtype *yyS_ = N_VGetArrayPointer(tmp1);
-    realtype *yp_ = N_VGetArrayPointer(yp);
     realtype *ypS_ = N_VGetArrayPointer(tmp2);
     realtype *rr_ = N_VGetArrayPointer(r);
     realtype *drr_ = N_VGetArrayPointer(tmp3);
@@ -95,7 +93,7 @@ int sundials_jacobian(realtype t, realtype cj, N_Vector y, N_Vector yp, N_Vector
 
         rhs_grad(t, yy_, yyS_, data, data_jacobian, rr_, drr_);
         if (sundials->data->has_mass) {
-            mass_grad(t, yp_, ypS_, data, data_jacobian, rr_, tmp);
+            mass(t, ypS_, data_jacobian, tmp);
             N_VLinearSum(-1.0, sundials->data->tmp, 1.0, tmp3, tmp3);
         } else {
             N_VLinearSum(-1.0, tmp2, 1.0, tmp3, tmp3);
@@ -137,7 +135,6 @@ int sundials_sensitivities(int Ns, realtype t, N_Vector yy, N_Vector yp, N_Vecto
     // resvalS = dg/dy * dy + dg/dp * dp - M * dy' 
     Sundials *sundials = (Sundials *)user_data;
     realtype *yy_ = N_VGetArrayPointer(yy);
-    realtype *yp_ = N_VGetArrayPointer(yp);
     realtype *rr_ = N_VGetArrayPointer(resval);
     realtype *yyS_ = N_VGetArrayPointer(yS[0]);
     realtype *ypS_ = N_VGetArrayPointer(ypS[0]);
@@ -148,7 +145,7 @@ int sundials_sensitivities(int Ns, realtype t, N_Vector yy, N_Vector yp, N_Vecto
 
     rhs_grad(t, yy_, yyS_, data, data_sens, rr_, rrS_);
     if (sundials->data->has_mass) {
-        mass_grad(t, yp_, ypS_, data, data_sens, rr_, tmp1_);
+        mass(t, ypS_, data_sens, tmp1_);
         N_VLinearSum(-1.0, tmp1, 1.0, resvalS[0], resvalS[0]);
     } else {
         N_VLinearSum(-1.0, ypS[0], 1.0, resvalS[0], resvalS[0]);
@@ -247,7 +244,6 @@ void MatrixCSC_add_col(MatrixCSC *matrix, Vector *data) {
 
 MatrixCSC *Sundials_create_jacobian(Sundials *sundials) {
     Vector *yy = Vector_create_and_fill(sundials->data->number_of_states, my_rand());
-    Vector *yp = Vector_create_and_fill(sundials->data->number_of_states, my_rand());
     Vector *yyS = Vector_create(sundials->data->number_of_states);
     Vector *ypS = Vector_create(sundials->data->number_of_states);
     Vector *rr = Vector_create(sundials->data->number_of_states);
@@ -259,7 +255,7 @@ MatrixCSC *Sundials_create_jacobian(Sundials *sundials) {
     realtype *data = sundials->model->data;
     realtype *data_jacobian = sundials->model->data_jacobian;
     for (int i = 0; i < sundials->data->number_of_states; i++) {
-        // J = df/dy + cj * df/dy'
+        // J = dg/dy' - cj M
         for (int j = 0; j < sundials->data->number_of_states; j++) {
             drr->data[i] = 0.;
             if (j == i) {
@@ -272,9 +268,13 @@ MatrixCSC *Sundials_create_jacobian(Sundials *sundials) {
         }
 
         rhs_grad(my_rand(), yy->data, yyS->data, data, data_jacobian, rr->data, drr->data);
-        mass_grad(my_rand(), yp->data, ypS->data, data, data_jacobian, rr->data, tmp->data);
-        for (int j = 0; j < sundials->data->number_of_states; j++) {
-            drr->data[j] = tmp->data[j] - drr->data[j];
+        if (sundials->data->has_mass) {
+            mass(my_rand(), ypS->data, data_jacobian, tmp->data);
+            for (int j = 0; j < sundials->data->number_of_states; j++) {
+                drr->data[j] = drr->data[j] - tmp->data[j];
+            }
+        } else {
+            drr->data[i] = drr->data[i] - ypS->data[i];
         }
 
         MatrixCSC_add_col(jacobian, drr);

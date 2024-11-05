@@ -229,8 +229,7 @@ MatrixCSC *Sundials_create_jacobian(Sundials *sundials);
 void rhs(const realtype t, const realtype* u, realtype* data, realtype* rr);
 void rhs_grad(const realtype t, const realtype* u, const realtype* du, realtype* data, realtype* ddata, realtype* rr, realtype* drr);
 
-void mass(const realtype t, const realtype* u, realtype* data, realtype* mm);
-void mass_grad(const realtype t, const realtype* u, const realtype* du, realtype* data, realtype* ddata, realtype* mm, realtype* dmm);
+void mass(const realtype t, const realtype* du, realtype* data, realtype* mm);
 
 void set_u0(realtype* data, realtype* u);
 void set_u0_grad(realtype* data, realtype* ddata, realtype* u, realtype* du);
