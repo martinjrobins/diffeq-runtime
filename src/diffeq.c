@@ -515,6 +515,16 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
     int has_mass = 0;
     get_dims(&number_of_states, &number_of_inputs, &number_of_outputs, &data_len, &number_of_stop, &has_mass);
     
+    if (sundials->data->options->debug) {
+        printf("inputs are:\n");
+        printf("times = ");
+        Vector_printf(times_vec);
+        printf("inputs = ");
+        Vector_printf(inputs_vec);
+        printf("outputs = ");
+        Vector_printf(outputs_vec);
+    }
+    
     const int fwd_sens = sundials->data->options->fwd_sens && number_of_inputs > 0;
     
     const realtype *inputs = inputs_vec->data;
