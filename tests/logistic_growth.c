@@ -72,11 +72,11 @@ void mass_grad(const realtype t, const realtype* up, const realtype* dup, realty
     drr[1] = 0;
 }
 
-void set_u0(realtype* data, realtype* u) {
+void set_u0(realtype* u, realtype* data) {
     Y = 1;
     Z = 0;
 }
-void set_u0_grad(realtype* data, realtype* ddata, realtype* u, realtype* du) {
+void set_u0_grad(realtype* u, realtype* du, realtype* data, realtype* ddata) {
     Y = 1;
     Z = 0;
     DY = 0;

@@ -541,10 +541,10 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
     
     if (fwd_sens) {
         set_inputs_grad(inputs, dinputs, sundials->model->data, sundials->model->data_sens);
-        set_u0_grad(sundials->model->data, sundials->model->data_sens, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS));
+        set_u0_grad(N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), sundials->model->data, sundials->model->data_sens);
     } else {
         set_inputs(inputs, sundials->model->data);
-        set_u0(sundials->model->data, N_VGetArrayPointer(sundials->data->yy));
+        set_u0(N_VGetArrayPointer(sundials->data->yy), sundials->model->data);
     }
 
     // if debug output y and yp before reinit, then run the model functions

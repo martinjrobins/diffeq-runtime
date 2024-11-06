@@ -231,8 +231,8 @@ void rhs_grad(const realtype t, const realtype* u, const realtype* du, realtype*
 
 void mass(const realtype t, const realtype* du, realtype* data, realtype* mm);
 
-void set_u0(realtype* data, realtype* u);
-void set_u0_grad(realtype* data, realtype* ddata, realtype* u, realtype* du);
+void set_u0(realtype* u, realtype* data);
+void set_u0_grad(realtype* u, realtype* du, realtype* data, realtype* ddata);
 
 void calc_out(const realtype t, const realtype* u, realtype* data);
 void calc_out_grad(const realtype t, const realtype* u, const realtype* du, realtype* data, realtype* ddata);
