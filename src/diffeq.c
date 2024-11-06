@@ -550,6 +550,10 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
             printf("%f ", N_VGetArrayPointer(sundials->data->yp)[j]);
         }
         printf("]\n");
+        printf("data = [");
+        for (int j = 0; j < data_len; j++) {
+            printf("%f ", sundials->model->data[j]);
+        }
 
         rhs(Vector_get(times_vec, 0), N_VGetArrayPointer(sundials->data->yy), sundials->model->data, N_VGetArrayPointer(sundials->data->tmp));
         printf("f(y0, t0) = [");
