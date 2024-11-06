@@ -1054,7 +1054,7 @@ void VectorInt_resize(VectorInt *vector, int len) {
     vector->len = len;
 }
 
-void Vector_printf(Vector *vector) {
+void Vector_printf(const Vector *vector) {
     printf("[");
     for (int i = 0; i < vector->len; i++) {
         printf("%f", vector->data[i]);

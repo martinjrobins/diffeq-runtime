@@ -88,7 +88,7 @@ EMSCRIPTEN_KEEPALIVE void VectorInt_push(VectorInt *vector, const int value);
 EMSCRIPTEN_KEEPALIVE void Vector_resize(Vector *vector, const int len);
 EMSCRIPTEN_KEEPALIVE void VectorInt_resize(VectorInt *vector, const int len);
 EMSCRIPTEN_KEEPALIVE int Vector_get_length(Vector *vector);
-void Vector_printf(Vector *vector);
+void Vector_printf(const Vector *vector);
 
 #define VECTOR_GET(vector, index) vector->data[index]
 #define VECTOR_LEN(vector) vector->len
