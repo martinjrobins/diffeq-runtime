@@ -94,4 +94,7 @@ void get_dims(int* states, int* inputs, int* outputs, int* data, int* stop, int*
 void set_id(realtype* id) {
     id[0] = 1;
 }
+void set_constants(uint32_t thread_id, uint32_t num_threads) {
+    // no constants
+}
 

@@ -118,4 +118,7 @@ void set_id(realtype* id) {
     id[0] = 1;
     id[1] = 0;
 }
+void set_constants(uint32_t thread_id, uint32_t num_threads) {
+    // no constants
+}
 

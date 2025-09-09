@@ -222,6 +222,9 @@ EMSCRIPTEN_KEEPALIVE int Sundials_number_of_outputs(Sundials *sundials);
 EMSCRIPTEN_KEEPALIVE int Sundials_number_of_states(Sundials *sundials);
 MatrixCSC *Sundials_create_jacobian(Sundials *sundials);
 
+/* Other functions */
+EMSCRIPTEN_KEEPALIVE void initialize_model();
+
 
 /*
 * model functions (linked in later)
@@ -244,6 +247,8 @@ void set_inputs_grad(const realtype* inputs, const realtype* dinputs, realtype* 
 
 void get_dims(int* states, int* inputs, int* outputs, int* data, int* stop, int* has_mass);
 void set_id(realtype* id);
+
+void set_constants(uint32_t thread_id, uint32_t num_threads);
 
 
 /* function to check function return values */

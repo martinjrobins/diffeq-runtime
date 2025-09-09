@@ -1044,4 +1044,6 @@ void Vector_printf(const Vector *vector) {
     printf("]\n");
 }
 
-
+void initialize_model() {
+    set_constants(1, 1);
+}
