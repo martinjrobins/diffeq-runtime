@@ -546,8 +546,6 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
         set_inputs(inputs, sundials->model->data);
         set_u0(N_VGetArrayPointer(sundials->data->yy), sundials->model->data, 1, 1);
     }
-    // zero out yp
-    N_VConst(RCONST(0.0), sundials->data->yp);
 
     // if debug output y and yp before reinit, then run the model functions
     // to check these are correct
