@@ -8,7 +8,13 @@ EOL
 ./logistic_growth_test -i 1,2 -t 0,0.1,0.2,0.3 -f > logistic_growth_output.txt
 
 if cmp -s "logistic_growth_output.txt" "logistic_growth_expected.txt"; then
+  echo "Test passed"
   exit 0
 else
+  echo "Test failed"
+  echo "Expected:"
+  cat logistic_growth_expected.txt
+  echo "Got:"
+  cat logistic_growth_output.txt
   exit 1
 fi

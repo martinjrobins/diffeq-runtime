@@ -24,7 +24,7 @@
 //    z,
 //}
 //
-// data = [r, k, F_0, F_1, G_0, G_1, out_0, out_1]
+// data = [r, k, F_0, F_1, G_0, G_1]
 #define Y u[0]
 #define Z u[1]
 #define DYDT up[0]
@@ -35,8 +35,6 @@
 #define F_1 data[3]
 #define G_0 data[4]
 #define G_1 data[5]
-#define OUT_0 data[6]
-#define OUT_1 data[7]
 
 #define DY du[0]
 #define DZ du[1]
@@ -48,54 +46,52 @@
 #define DF_1 ddata[3]
 #define DG_0 ddata[4]
 #define DG_1 ddata[5]
-#define DOUT_0 ddata[6]
-#define DOUT_1 ddata[7]
 
 
-void rhs(const realtype t, const realtype* u, realtype* data, realtype* rr) {
+void rhs(const realtype t, const realtype* u, realtype* data, realtype* rr, uint32_t thread_id, uint32_t num_threads) {
     rr[0] = (R * Y) * (1 - (Y / K));
     rr[1] = (2 * Y) - Z;
 }
 
-void rhs_grad(const realtype t, const realtype* u, const realtype* du, realtype* data, realtype* ddata, realtype* rr, realtype* drr) {
+void rhs_grad(const realtype t, const realtype* u, const realtype* du, realtype* data, realtype* ddata, realtype* rr, realtype* drr, uint32_t thread_id, uint32_t num_threads) {
     drr[0] = (DR * Y) * (1 - (Y / K)) + (R * DY) * (1 - (Y / K)) + (R * Y) * (0 - (DY / K)) + (R * Y) * (0 + (Y * DK / (K * K)));
     drr[1]= (2 * DY) - DZ;
 }
 
-void mass(const realtype t, const realtype* up, realtype* data, realtype* rr) {
+void mass(const realtype t, const realtype* up, realtype* data, realtype* rr, uint32_t thread_id, uint32_t num_threads) {
     rr[0] = DYDT;
     rr[1] = 0;
 }
 
-void mass_grad(const realtype t, const realtype* up, const realtype* dup, realtype* data, realtype* ddata, realtype* rr, realtype* drr) {
+void mass_grad(const realtype t, const realtype* up, const realtype* dup, realtype* data, realtype* ddata, realtype* rr, realtype* drr, uint32_t thread_id, uint32_t num_threads) {
     drr[0] = DDYDT;
     drr[1] = 0;
 }
 
-void set_u0(realtype* u, realtype* data) {
+void set_u0(realtype* u, realtype* data, uint32_t thread_id, uint32_t num_threads) {
     Y = 1;
     Z = 0;
 }
-void set_u0_grad(realtype* u, realtype* du, realtype* data, realtype* ddata) {
+void set_u0_grad(realtype* u, realtype* du, realtype* data, realtype* ddata, uint32_t thread_id, uint32_t num_threads) {
     Y = 1;
     Z = 0;
     DY = 0;
     DZ = 0;
 }
 
-void calc_out(const realtype t, const realtype* u, realtype* data) {
-    OUT_0 = Y;
-    OUT_1 = Z;
+void calc_out(const realtype t, const realtype* u, realtype* data, realtype *out, uint32_t thread_id, uint32_t num_threads) {
+    out[0] = Y;
+    out[1] = Z;
 }
 
-void calc_out_grad(const realtype t, const realtype* u, const realtype* du, realtype* data, realtype* ddata) {
-    OUT_0 = Y;
-    OUT_1 = Z;
-    DOUT_0 = DY;
-    DOUT_1 = DZ;
+void calc_out_grad(const realtype t, const realtype* u, const realtype* du, realtype* data, realtype* ddata, realtype *out, realtype *dout, uint32_t thread_id, uint32_t num_threads) {
+    out[0] = Y;
+    out[1] = Z;
+    dout[0] = DY;
+    dout[1] = DZ;
 }
 
-void calc_stop(const realtype t, const realtype* u, realtype* data, realtype* stop) {
+void calc_stop(const realtype t, const realtype* u, realtype* data, realtype* stop, uint32_t thread_id, uint32_t num_threads) {
     stop[0] = Y - 1.2;
 }
 
@@ -121,9 +117,5 @@ void get_dims(int* states, int* inputs, int* outputs, int* data, int* stop, int*
 void set_id(realtype* id) {
     id[0] = 1;
     id[1] = 0;
-}
-void get_out(const realtype* data, realtype** tensor_data, int* tensor_size) {
-    *tensor_data = (realtype*) &OUT_0;
-    *tensor_size = 2;
 }
 

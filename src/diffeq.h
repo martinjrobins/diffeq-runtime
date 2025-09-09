@@ -226,25 +226,24 @@ MatrixCSC *Sundials_create_jacobian(Sundials *sundials);
 /*
 * model functions (linked in later)
 */
-void rhs(const realtype t, const realtype* u, realtype* data, realtype* rr);
-void rhs_grad(const realtype t, const realtype* u, const realtype* du, realtype* data, realtype* ddata, realtype* rr, realtype* drr);
+void rhs(const realtype t, const realtype* u, realtype* data, realtype* rr, uint32_t thread_id, uint32_t num_threads);
+void rhs_grad(const realtype t, const realtype* u, const realtype* du, realtype* data, realtype* ddata, realtype* rr, realtype* drr, uint32_t thread_id, uint32_t num_threads);
 
-void mass(const realtype t, const realtype* du, realtype* data, realtype* mm);
+void mass(const realtype t, const realtype* du, realtype* data, realtype* mm, uint32_t thread_id, uint32_t num_threads);
 
-void set_u0(realtype* u, realtype* data);
-void set_u0_grad(realtype* u, realtype* du, realtype* data, realtype* ddata);
+void set_u0(realtype* u, realtype* data, uint32_t thread_id, uint32_t num_threads);
+void set_u0_grad(realtype* u, realtype* du, realtype* data, realtype* ddata, uint32_t thread_id, uint32_t num_threads);
 
-void calc_out(const realtype t, const realtype* u, realtype* data);
-void calc_out_grad(const realtype t, const realtype* u, const realtype* du, realtype* data, realtype* ddata);
+void calc_out(const realtype t, const realtype* u, realtype* data, realtype *out, uint32_t thread_id, uint32_t num_threads);
+void calc_out_grad(const realtype t, const realtype* u, const realtype* du, realtype* data, realtype* ddata, realtype *out, realtype *dout, uint32_t thread_id, uint32_t num_threads);
 
-void calc_stop(const realtype t, const realtype* u, realtype* data, realtype* stop);
+void calc_stop(const realtype t, const realtype* u, realtype* data, realtype* stop, uint32_t thread_id, uint32_t num_threads);
 
 void set_inputs(const realtype* inputs, realtype* data);
 void set_inputs_grad(const realtype* inputs, const realtype* dinputs, realtype* data, realtype* ddata);
 
 void get_dims(int* states, int* inputs, int* outputs, int* data, int* stop, int* has_mass);
 void set_id(realtype* id);
-void get_out(const realtype* data, realtype** tensor_data, int* tensor_size);
 
 
 /* function to check function return values */

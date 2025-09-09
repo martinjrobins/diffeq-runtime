@@ -12,9 +12,9 @@ int sundials_residual(realtype t, N_Vector y, N_Vector ydot, N_Vector rr, void *
     realtype *tmp = N_VGetArrayPointer(sundials->data->tmp);
 
     // residual is g(t, y) - M * y'
-    rhs(t, yy, data, rrr);  // rr = g(t, y)
+    rhs(t, yy, data, rrr, 1, 1);  // rr = g(t, y)
     if (sundials->data->has_mass) {
-        mass(t, yp, data, tmp); // tmp = M * y'
+        mass(t, yp, data, tmp, 1, 1); // tmp = M * y'
         N_VLinearSum(-1.0, sundials->data->tmp, 1.0, rr, rr); // rr = g(t, y) - M * y'
     } else {
         N_VLinearSum(-1.0, ydot, 1.0, rr, rr); // rr = g(t, y) - y'
@@ -27,7 +27,7 @@ int sundials_root(realtype t, N_Vector y, N_Vector ydot, realtype *gout, void *u
     Sundials *sundials = (Sundials *)user_data;
     realtype *yy = N_VGetArrayPointer(y);
     realtype *data = sundials->model->data;
-    calc_stop(t, yy, data, gout);
+    calc_stop(t, yy, data, gout, 1, 1);
     return(0);
 }
 
@@ -49,9 +49,9 @@ int sundials_jtime(realtype tt, N_Vector yy, N_Vector yp, N_Vector rr, N_Vector 
         ypS_[i] = cj * v_[i];
     }
 
-    rhs_grad(tt, yy_, v_, data, data_jacobian, rr_, Jv_);
+    rhs_grad(tt, yy_, v_, data, data_jacobian, rr_, Jv_, 1, 1);
     if (sundials->data->has_mass) {
-        mass(tt, ypS_, data_jacobian, tmp2_);
+        mass(tt, ypS_, data_jacobian, tmp2_, 1, 1);
         N_VLinearSum(-1.0, tmp2, 1.0, Jv, Jv);
     } else {
         N_VLinearSum(-1.0, tmp1, 1.0, Jv, Jv);
@@ -91,9 +91,9 @@ int sundials_jacobian(realtype t, realtype cj, N_Vector y, N_Vector yp, N_Vector
             }
         }
 
-        rhs_grad(t, yy_, yyS_, data, data_jacobian, rr_, drr_);
+        rhs_grad(t, yy_, yyS_, data, data_jacobian, rr_, drr_, 1, 1);
         if (sundials->data->has_mass) {
-            mass(t, ypS_, data_jacobian, tmp);
+            mass(t, ypS_, data_jacobian, tmp, 1, 1);
             N_VLinearSum(-1.0, sundials->data->tmp, 1.0, tmp3, tmp3);
         } else {
             N_VLinearSum(-1.0, tmp2, 1.0, tmp3, tmp3);
@@ -143,9 +143,9 @@ int sundials_sensitivities(int Ns, realtype t, N_Vector yy, N_Vector yp, N_Vecto
     realtype *data_sens = sundials->model->data_sens;
     realtype *tmp1_ = N_VGetArrayPointer(tmp1);
 
-    rhs_grad(t, yy_, yyS_, data, data_sens, rr_, rrS_);
+    rhs_grad(t, yy_, yyS_, data, data_sens, rr_, rrS_, 1, 1);
     if (sundials->data->has_mass) {
-        mass(t, ypS_, data_sens, tmp1_);
+        mass(t, ypS_, data_sens, tmp1_, 1, 1);
         N_VLinearSum(-1.0, tmp1, 1.0, resvalS[0], resvalS[0]);
     } else {
         N_VLinearSum(-1.0, ypS[0], 1.0, resvalS[0], resvalS[0]);
@@ -267,9 +267,9 @@ MatrixCSC *Sundials_create_jacobian(Sundials *sundials) {
             }
         }
 
-        rhs_grad(my_rand(), yy->data, yyS->data, data, data_jacobian, rr->data, drr->data);
+        rhs_grad(my_rand(), yy->data, yyS->data, data, data_jacobian, rr->data, drr->data, 1, 1);
         if (sundials->data->has_mass) {
-            mass(my_rand(), ypS->data, data_jacobian, tmp->data);
+            mass(my_rand(), ypS->data, data_jacobian, tmp->data, 1, 1);
             for (int j = 0; j < sundials->data->number_of_states; j++) {
                 drr->data[j] = drr->data[j] - tmp->data[j];
             }
@@ -541,11 +541,13 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
     
     if (fwd_sens) {
         set_inputs_grad(inputs, dinputs, sundials->model->data, sundials->model->data_sens);
-        set_u0_grad(N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), sundials->model->data, sundials->model->data_sens);
+        set_u0_grad(N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), sundials->model->data, sundials->model->data_sens, 1, 1);
     } else {
         set_inputs(inputs, sundials->model->data);
-        set_u0(N_VGetArrayPointer(sundials->data->yy), sundials->model->data);
+        set_u0(N_VGetArrayPointer(sundials->data->yy), sundials->model->data, 1, 1);
     }
+    // zero out yp
+    N_VConst(RCONST(0.0), sundials->data->yp);
 
     // if debug output y and yp before reinit, then run the model functions
     // to check these are correct
@@ -565,14 +567,14 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
             printf("%f ", sundials->model->data[j]);
         }
 
-        rhs(Vector_get(times_vec, 0), N_VGetArrayPointer(sundials->data->yy), sundials->model->data, N_VGetArrayPointer(sundials->data->tmp));
+        rhs(Vector_get(times_vec, 0), N_VGetArrayPointer(sundials->data->yy), sundials->model->data, N_VGetArrayPointer(sundials->data->tmp), 1, 1);
         printf("f(y0, t0) = [");
         for (int j = 0; j < number_of_states; j++) {
             printf("%f ", N_VGetArrayPointer(sundials->data->tmp)[j]);
         }
         printf("]\n");
 
-        mass(Vector_get(times_vec, 0), N_VGetArrayPointer(sundials->data->yp), sundials->model->data, N_VGetArrayPointer(sundials->data->tmp));
+        mass(Vector_get(times_vec, 0), N_VGetArrayPointer(sundials->data->yp), sundials->model->data, N_VGetArrayPointer(sundials->data->tmp), 1, 1);
         printf("M * yp0 = [");
         for (int j = 0; j < number_of_states; j++) {
             printf("%f ", N_VGetArrayPointer(sundials->data->tmp)[j]);
@@ -584,14 +586,8 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
 
     if (has_mass == 0) {
         // if no mass then yp = g(t, y)
-        rhs(t0, N_VGetArrayPointer(sundials->data->yy), sundials->model->data, N_VGetArrayPointer(sundials->data->yp));
+        rhs(t0, N_VGetArrayPointer(sundials->data->yy), sundials->model->data, N_VGetArrayPointer(sundials->data->yp), 1, 1);
     }
-
-    realtype *output;
-    realtype *doutput;
-    int tensor_size;
-    get_out(sundials->model->data , &output, &tensor_size);
-    get_out(sundials->model->data_sens, &doutput, &tensor_size);
 
     // reinit solve
     retval = IDAReInit(sundials->ida_mem, t0, sundials->data->yy, sundials->data->yp);
@@ -627,23 +623,15 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
     }
 
     if (fwd_sens) {
-        calc_out_grad(t0, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), sundials->model->data, sundials->model->data_sens);
+        Vector_resize(outputs_vec, number_of_outputs);
+        Vector_resize(doutputs_vec, number_of_outputs);
+        calc_out_grad(t0, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), sundials->model->data, sundials->model->data_sens, outputs_vec->data, doutputs_vec->data, 1, 1);
     } else {
-        calc_out(t0, N_VGetArrayPointer(sundials->data->yy), sundials->model->data);
+        Vector_resize(outputs_vec, number_of_outputs);
+        calc_out(t0, N_VGetArrayPointer(sundials->data->yy), sundials->model->data, outputs_vec->data, 1, 1);
     }
 
-    // init output and save initial state
-    Vector_resize(outputs_vec, 0);
-    for (int j = 0; j < number_of_outputs; j++) {
-        Vector_push(outputs_vec, output[j]);
-    }
-    if (fwd_sens) {
-        Vector_resize(doutputs_vec, 0);
-        for (int j = 0; j < number_of_outputs; j++) {
-            Vector_push(doutputs_vec, doutput[j]);
-        }
-    }
-
+    
     realtype t_final = Vector_get(times_vec, times_vec->len - 1);
     int itask = IDA_ONE_STEP;
     if (sundials->data->options->fixed_times) {
@@ -683,7 +671,7 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
 
         // if no residual evaluations were performed, or if the last one was not at the returned solution we need to call rhs manually
         // to get the correct output
-        rhs(tret, N_VGetArrayPointer(sundials->data->yy), sundials->model->data, N_VGetArrayPointer(sundials->data->tmp));
+        rhs(tret, N_VGetArrayPointer(sundials->data->yy), sundials->model->data, N_VGetArrayPointer(sundials->data->tmp), 1, 1);
 
         // if debug output y and yp
         if (sundials->data->options->debug) {
@@ -700,25 +688,18 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
             printf("]\n");
         }
 
-        // get output (calculated into output and doutput array)
+        // get output
         if (fwd_sens) {
             int retval_fwd_sens = IDAGetSensDky1(sundials->ida_mem, tret, 0, 0, sundials->data->yyS);
             if (check_retval(&retval_fwd_sens, "IDAGetSens1", 1)) return(1);
-
-            calc_out_grad(tret, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), sundials->model->data, sundials->model->data_sens);
+            Vector_resize(outputs_vec, number_of_outputs * (i + 1));
+            Vector_resize(doutputs_vec, number_of_outputs * (i + 1));
+            calc_out_grad(tret, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), sundials->model->data, sundials->model->data_sens, outputs_vec->data + i * number_of_outputs, doutputs_vec->data + i * number_of_outputs, 1, 1);
         } else {
-            calc_out(tret, N_VGetArrayPointer(sundials->data->yy), sundials->model->data);
+            Vector_resize(outputs_vec, number_of_outputs * i);
+            calc_out(tret, N_VGetArrayPointer(sundials->data->yy), sundials->model->data, outputs_vec->data + i * number_of_outputs, 1, 1);
         }
 
-        // save output
-        for (int j = 0; j < number_of_outputs; j++) {
-            Vector_push(outputs_vec, output[j]);
-        }
-        if (fwd_sens) {
-            for (int j = 0; j < number_of_outputs; j++) {
-                Vector_push(doutputs_vec, doutput[j]);
-            }
-        }
 
         // if using solver times save time point
         if (!sundials->data->options->fixed_times) {
