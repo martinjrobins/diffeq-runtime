@@ -694,7 +694,7 @@ int Sundials_solve(Sundials *sundials, Vector *times_vec, const Vector *inputs_v
             Vector_resize(doutputs_vec, number_of_outputs * (i + 1));
             calc_out_grad(tret, N_VGetArrayPointer(sundials->data->yy), N_VGetArrayPointer(sundials->data->yyS), sundials->model->data, sundials->model->data_sens, outputs_vec->data + i * number_of_outputs, doutputs_vec->data + i * number_of_outputs, 1, 1);
         } else {
-            Vector_resize(outputs_vec, number_of_outputs * i);
+            Vector_resize(outputs_vec, number_of_outputs * (i + 1));
             calc_out(tret, N_VGetArrayPointer(sundials->data->yy), sundials->model->data, outputs_vec->data + i * number_of_outputs, 1, 1);
         }
 

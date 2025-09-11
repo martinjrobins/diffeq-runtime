@@ -134,6 +134,34 @@ void test_solve_klu(void)
   TEST_ASSERT_DOUBLE_ARRAY_WITHIN(0.001, expected_doutputs, doutputs->data, noutputs * times->len);
 }
 
+void test_solve_nonfixed(void)
+{
+  inputs->data[0] = 1;
+  inputs->data[1] = 2;
+  dinputs->data[0] = 1;
+  dinputs->data[1] = 0;
+  Vector_resize(times, 2);
+  times->data[0] = 0.0;
+  times->data[1] = 0.3;
+  options = Options_create();
+  retval = Sundials_init(sundials, options);
+  TEST_ASSERT_EQUAL(retval, 0);
+
+  retval = Sundials_solve(sundials, times, inputs, dinputs, outputs, doutputs);
+  TEST_ASSERT_EQUAL(retval, 0);
+
+  const realtype expected_outputs[] = {
+    1.000000,2.000000,
+    1.148881,2.297763
+  };
+  TEST_ASSERT_GREATER_THAN_INT(2, times->len);
+  const int noutputs = 2;
+  TEST_ASSERT_EQUAL(outputs->len, noutputs * times->len);
+  TEST_ASSERT_EQUAL(doutputs->len, noutputs * times->len);
+  TEST_ASSERT_DOUBLE_ARRAY_WITHIN(0.001, expected_outputs, outputs->data, noutputs);
+  TEST_ASSERT_DOUBLE_ARRAY_WITHIN(0.001, expected_outputs + noutputs, outputs->data + noutputs * (times->len - 1), noutputs);
+}
+
 void test_stop(void)
 {
   VECTOR_GET(inputs, 0) = 1;
@@ -161,5 +189,6 @@ int main(void) {
     RUN_TEST(test_solve_twice);
     RUN_TEST(test_solve_klu);
     RUN_TEST(test_stop);
+    RUN_TEST(test_solve_nonfixed);
     return UNITY_END();
 }
